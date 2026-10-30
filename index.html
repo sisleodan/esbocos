@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Esboços de Pregação</title>
+<style>
+  :root{
+    --bg:#F7F4ED;
+    --surface:#FFFFFF;
+    --ink:#2A2420;
+    --ink-soft:#6B6052;
+    --primary:#3B3486;
+    --primary-dark:#2A2563;
+    --primary-soft:#E8E6F4;
+    --gold:#B8862D;
+    --gold-soft:#F7EDD9;
+    --danger:#B3432B;
+    --danger-soft:#F8E7E1;
+    --border:#E3DECF;
+    --ghost:#fff;
+    --radius:10px;
+    --font-display: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', 'Consolas', 'Courier New', monospace;
+    --m-size:15px;
+    --m-ink:var(--ink);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:var(--font-body); background:var(--bg); color:var(--ink); min-height:100vh; -webkit-tap-highlight-color:transparent;}
+  h1,h2,h3{font-family:var(--font-display); font-weight:700; margin:0 0 4px;}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+  #app{min-height:100vh; display:flex; flex-direction:column;}
+
+  header.topbar{background:var(--primary-dark); color:#fff; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  header.topbar .brand .tag{font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#C9C4E6;}
+  header.topbar .brand h1{font-size:18px; color:#fff;}
+
+  nav.tabs{display:flex; background:var(--surface); border-bottom:1px solid var(--border); overflow-x:auto; position:sticky; top:0; z-index:5;}
+  nav.tabs button{flex:1; min-width:100px; background:none; border:none; padding:12px 8px; font-size:12.5px; color:var(--ink-soft); font-weight:600; border-bottom:3px solid transparent; white-space:nowrap;}
+  nav.tabs button.active{color:var(--primary); border-bottom-color:var(--primary);}
+  nav.tabs button:hover{background:var(--primary-soft);}
+
+  main{flex:1; padding:20px; max-width:860px; margin:0 auto; width:100%;}
+  .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:18px; flex-wrap:wrap;}
+  .page-head h2{font-size:22px;}
+  .page-head .sub{color:var(--ink-soft); font-size:13px;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:16px;}
+  .empty{padding:30px 10px; text-align:center; color:var(--ink-soft); font-size:14px;}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:8px; padding:11px 18px; font-size:14px; font-weight:600; background:var(--primary); color:#fff; width:100%;}
+  .btn:hover{background:var(--primary-dark);}
+  .btn.secondary{background:var(--surface); color:var(--primary); border:1px solid var(--primary);}
+  .btn.secondary:hover{background:var(--primary-soft);}
+  .btn.danger{background:var(--danger);}
+  .btn.danger:hover{background:#8f341f;}
+  .btn.ghost{background:var(--ghost); color:var(--ink-soft); border:1px solid var(--border);}
+  .btn.small{padding:6px 18px; font-size:13px; width:auto;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--ink-soft); margin-bottom:5px; font-weight:600;}
+  .field input, .field select, .field textarea{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:15px; background:#FCFBF8; color:var(--ink);}
+  .field textarea{resize:vertical; min-height:70px; font-family:var(--font-body); line-height:1.5;}
+  .field input:focus, .field textarea:focus, .field select:focus{outline:2px solid var(--primary); outline-offset:1px; border-color:var(--primary);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:520px){ .row2{grid-template-columns:1fr;} }
+
+  .toolbar{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap;}
+  .search-box{flex:1; min-width:160px;}
+  .search-box input{width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px;}
+
+  .esboco-card{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--primary); border-radius:var(--radius); padding:16px 18px; margin-bottom:12px;}
+  .esboco-card .meta{display:flex; gap:10px; flex-wrap:wrap; align-items:center; color:var(--ink-soft); font-size:12.5px; margin:4px 0 10px;}
+  .badge{display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:700; background:var(--gold-soft); color:var(--gold);}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+
+  .ponto-card, .link-card{background:#FCFBF8; border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:12px; position:relative;}
+  .ponto-card .ponto-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .ponto-card .ponto-num{font-family:var(--font-display); font-weight:700; color:var(--primary);}
+  .remove-x{background:none; border:none; color:var(--danger); font-size:18px; cursor:pointer; line-height:1;}
+  .link-card .ponto-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .link-card .ponto-num{font-family:var(--font-display); font-weight:700; color:var(--primary);}
+  .inline-row{display:flex; gap:8px;}
+  .inline-row input{flex:1; min-width:0;}
+  a.verse{color:var(--primary); text-decoration:underline;}
+
+  .error-msg{background:var(--danger-soft); color:var(--danger); padding:9px 12px; border-radius:8px; font-size:13px; margin-bottom:14px;}
+  .ok-msg{background:var(--primary-soft); color:var(--primary-dark); padding:9px 12px; border-radius:8px; font-size:13px; margin-bottom:14px;}
+
+  .overlay{position:fixed; inset:0; background:rgba(20,16,10,.45); display:flex; align-items:center; justify-content:center; padding:16px; z-index:50;}
+  .modal{background:var(--surface); border-radius:14px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; padding:24px;}
+  .modal h3{font-size:19px; margin-bottom:16px;}
+  .modal-actions{display:flex; gap:10px; margin-top:18px;}
+  .modal-actions .btn{width:auto; flex:1;}
+
+  /* Popup de visualização em tela cheia (largura total) */
+  .overlay.overlay-full{padding:8px; align-items:stretch;}
+  .modal.modal-full{max-width:none; max-height:100%; padding:16px;}
+  .modal-full .manuscrito{max-width:none; margin:0; padding:30px clamp(16px,4vw,48px);}
+  .modal-full .modal-actions{max-width:none; margin:16px 0 0;}
+
+  /* ---------- Manuscrito para impressão/visualização ---------- */
+  .manuscrito{background:#FFFDF8; border:1px solid var(--border); border-radius:var(--radius); padding:30px 28px; max-width:680px; margin:0 auto; font-size:var(--m-size); color:var(--m-ink);}
+  .manuscrito .m-tema{font-family:var(--font-mono); font-size:.73em; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); margin-bottom:6px;}
+  .manuscrito h1{font-size:1.73em; color:var(--m-ink); margin-bottom:4px;}
+  .manuscrito .m-base{font-style:italic; color:var(--ink-soft); font-size:.93em; margin-bottom:4px;}
+  .manuscrito .m-data{font-size:.83em; color:var(--ink-soft); margin-bottom:18px; border-bottom:1px dashed var(--border); padding-bottom:16px;}
+  .manuscrito h3.m-sec{font-size:.87em; text-transform:uppercase; letter-spacing:.08em; color:var(--primary); margin:20px 0 8px;}
+  .manuscrito p{line-height:1.65; font-size:1em; margin:0 0 10px; white-space:pre-wrap;}
+  .manuscrito .m-ponto{margin-bottom:14px;}
+  .manuscrito .m-ponto .m-ponto-titulo{font-weight:700; font-size:1.03em;}
+  .manuscrito .m-ponto .m-ponto-vers{font-style:italic; color:var(--gold); font-size:.87em; margin:2px 0 4px;}
+
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+
+  /* Estilo por tópico (cor, negrito, itálico) — variáveis definidas em Configurações */
+  .manuscrito .s-titulo{color:var(--s-titulo-c,var(--m-ink)); font-weight:var(--s-titulo-w,700); font-style:var(--s-titulo-i,normal);}
+  .manuscrito .s-base{color:var(--s-base-c,var(--ink-soft)); font-weight:var(--s-base-w,400); font-style:var(--s-base-i,italic);}
+  .manuscrito .s-base a.verse{color:var(--s-base-c,var(--primary));}
+  .manuscrito h3.m-sec.s-secao{color:var(--s-secao-c,var(--primary)); font-weight:var(--s-secao-w,700); font-style:var(--s-secao-i,normal);}
+  .manuscrito .m-ponto-aplic-label{font-size:.8em; text-transform:uppercase; letter-spacing:.08em; margin:10px 0 4px; color:var(--s-secao-c,var(--primary)); font-weight:var(--s-secao-w,700); font-style:var(--s-secao-i,normal);}
+  .manuscrito .s-intro{color:var(--s-intro-c,inherit); font-weight:var(--s-intro-w,inherit); font-style:var(--s-intro-i,normal);}
+  .manuscrito .s-ptitulo{color:var(--s-ptitulo-c,inherit); font-weight:var(--s-ptitulo-w,700); font-style:var(--s-ptitulo-i,normal);}
+  .manuscrito .m-ponto .s-vers{color:var(--s-vers-c,var(--gold)); font-weight:var(--s-vers-w,400); font-style:var(--s-vers-i,italic);}
+  .manuscrito .s-vers a.verse{color:var(--s-vers-c,var(--primary));}
+  .manuscrito .s-ptexto{color:var(--s-ptexto-c,inherit); font-weight:var(--s-ptexto-w,inherit); font-style:var(--s-ptexto-i,normal);}
+  .manuscrito .s-aplic{color:var(--s-aplic-c,inherit); font-weight:var(--s-aplic-w,inherit); font-style:var(--s-aplic-i,normal);}
+  .manuscrito .s-concl{color:var(--s-concl-c,inherit); font-weight:var(--s-concl-w,inherit); font-style:var(--s-concl-i,normal);}
+  .manuscrito .s-obs{color:var(--s-obs-c,inherit); font-weight:var(--s-obs-w,inherit); font-style:var(--s-obs-i,normal);}
+  .est-row{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--border);}
+  .est-row:last-of-type{border-bottom:none;}
+  .est-nome{flex:1; font-size:14px; min-width:0;}
+  .est-btn{width:34px; height:34px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--ink); font-size:15px; padding:0; flex:none;}
+  .est-btn.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+
+  /* Configurações: pré-visualização e cores */
+  .swatches{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .swatch{width:34px; height:34px; border-radius:50%; border:2px solid var(--border); padding:0;}
+  .swatch.sel{border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-soft);}
+  input[type=color].cor-livre{width:44px; height:34px; padding:2px; border:1px solid var(--border); border-radius:8px; background:#fff;}
+  input[type=range].tam{width:100%; accent-color:var(--primary);}
+  .tam-row{display:flex; align-items:center; gap:10px;}
+  .tam-row .btn{width:auto; padding:4px 12px;}
+  .preview-box{margin-top:14px; border:1px dashed var(--border); border-radius:8px; padding:14px; background:#FFFDF8; font-size:var(--m-size); color:var(--m-ink); line-height:1.5;}
+
+  @media print{
+    header.topbar, nav.tabs, .no-print{display:none !important;}
+    body{background:#fff;}
+    main{padding:0; max-width:100%;}
+    .manuscrito{border:none; box-shadow:none; padding:0;}
+  }
+  @media (min-width:720px){ nav.tabs button{flex:none; padding:12px 20px;} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============ CAMADA DE DADOS (localStorage) ============ */
+const DB = {
+  getEsbocos(){ return JSON.parse(localStorage.getItem('ep_esbocos')||'[]'); },
+  setEsbocos(l){ localStorage.setItem('ep_esbocos', JSON.stringify(l)); }
+};
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* Modelo usado na geração por IA (troque aqui se quiser outro) */
+const MODELO_IA = 'claude-sonnet-5-5';
+function getCfg(){ return JSON.parse(localStorage.getItem('ep_cfg')||'{}'); }
+function setCfg(c){ localStorage.setItem('ep_cfg', JSON.stringify(c)); }
+const FONTE_PADRAO={tam:15, cor:'#2A2420'};
+/* Tópicos da visualização que podem ter estilo próprio (c = cor padrão; null = segue a cor geral) */
+const ESTILOS={
+  titulo:{n:'Título da pregação', c:null, b:true, i:false},
+  base:{n:'Texto-base', c:'#6B6052', b:false, i:true},
+  secao:{n:'Títulos das seções', c:'#3B3486', b:true, i:false},
+  intro:{n:'Introdução', c:null, b:false, i:false},
+  ptitulo:{n:'Título dos pontos', c:null, b:true, i:false},
+  vers:{n:'Versículo de apoio', c:'#3B3486', b:false, i:true},
+  ptexto:{n:'Desenvolvimento dos pontos', c:null, b:false, i:false},
+  aplic:{n:'Aplicação prática', c:null, b:false, i:false},
+  concl:{n:'Conclusão', c:null, b:false, i:false},
+  obs:{n:'Observações', c:null, b:false, i:false}
+};
+function estEfetivo(k){
+  const d=ESTILOS[k], e=(getCfg().estilos||{})[k]||{};
+  return { c:e.c||d.c||(getCfg().fonteCor||FONTE_PADRAO.cor), b:e.b!==undefined?e.b:d.b, i:e.i!==undefined?e.i:d.i };
+}
+function setEstilo(k, patch){
+  const c=getCfg(); c.estilos=c.estilos||{};
+  if(patch===null) delete c.estilos[k]; else c.estilos[k]={...(c.estilos[k]||{}), ...patch};
+  if(c.estilos[k] && !Object.keys(c.estilos[k]).length) delete c.estilos[k];
+  setCfg(c); aplicarVisualizacao();
+}
+function linhaEstilo(k){
+  const e=estEfetivo(k);
+  return `<div class="est-row" data-est="${k}">
+    <span class="est-nome" style="color:${e.c}; font-weight:${e.b?700:400}; font-style:${e.i?'italic':'normal'};">${ESTILOS[k].n}</span>
+    <input type="color" class="cor-livre est-cor" value="${e.c}" title="Cor">
+    <button type="button" class="est-btn est-b ${e.b?'on':''}" title="Negrito" aria-label="Negrito"><b>N</b></button>
+    <button type="button" class="est-btn est-i ${e.i?'on':''}" title="Itálico" aria-label="Itálico"><i>I</i></button>
+    <button type="button" class="est-btn est-reset" title="Restaurar este tópico" aria-label="Restaurar">↺</button>
+  </div>`;
+}
+function atualizarLinhaEstilo(row){
+  const k=row.dataset.est, e=estEfetivo(k);
+  const nome=row.querySelector('.est-nome');
+  nome.style.color=e.c; nome.style.fontWeight=e.b?700:400; nome.style.fontStyle=e.i?'italic':'normal';
+  row.querySelector('.est-cor').value=e.c;
+  row.querySelector('.est-b').classList.toggle('on',e.b);
+  row.querySelector('.est-i').classList.toggle('on',e.i);
+}
+function aplicarVisualizacao(){
+  const c=getCfg(), r=document.documentElement.style;
+  Object.keys(ESTILOS).forEach(k=>{
+    const e=(c.estilos||{})[k]||{};
+    if(e.c) r.setProperty('--s-'+k+'-c', e.c); else r.removeProperty('--s-'+k+'-c');
+    if(e.b!==undefined) r.setProperty('--s-'+k+'-w', e.b?'700':'400'); else r.removeProperty('--s-'+k+'-w');
+    if(e.i!==undefined) r.setProperty('--s-'+k+'-i', e.i?'italic':'normal'); else r.removeProperty('--s-'+k+'-i');
+  });
+  if(c.fonteTam) r.setProperty('--m-size', c.fonteTam+'px'); else r.removeProperty('--m-size');
+  if(c.fonteCor) r.setProperty('--m-ink', c.fonteCor); else r.removeProperty('--m-ink');
+}
+function escapeAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function normalizeUrl(u){ u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
+/* ---- Site de pesquisa dos versículos ---- */
+const VERSOES_BG=[['ARA','Almeida Revista e Atualizada (ARA)'],['ARC','Almeida Revista e Corrigida (ARC)'],['NAA','Nova Almeida Atualizada (NAA)'],['NVI-PT','Nova Versão Internacional (NVI)'],['NTLH','Nova Tradução na Linguagem de Hoje (NTLH)']];
+const VERSOES_BO=[['ACF','Almeida Corrigida Fiel (ACF)'],...VERSOES_BG];
+function siteBusca(){ return getCfg().site==='bibliaonline' ? 'bibliaonline' : 'biblegateway'; }
+function versoesDoSite(site){ return site==='bibliaonline' ? VERSOES_BO : VERSOES_BG; }
+function versaoEfetiva(){
+  const v=getCfg().versao;
+  return versoesDoSite(siteBusca()).some(x=>x[0]===v) ? v : 'ARA';
+}
+function opcoesVersao(){
+  const ef=versaoEfetiva();
+  return versoesDoSite(siteBusca()).map(([c,n])=>`<option value="${c}" ${ef===c?'selected':''}>${n}</option>`).join('');
+}
+function bibleUrl(ref){
+  const v=versaoEfetiva();
+  if(siteBusca()==='bibliaonline'){
+    const slugV = v==='NVI-PT' ? 'nvi' : v.toLowerCase();
+    const r=refEstruturada(ref);
+    if(r){
+      let u='https://www.bibliaonline.com.br/'+slugV+'/'+encodeURIComponent(SLUGS_BO[r.livro])+'/'+r.cap;
+      if(r.ini) u+='/'+r.ini+(r.fim?'-'+r.fim:'');
+      return u;
+    }
+    return 'https://www.bibliaonline.com.br/'+slugV+'/busca?q='+encodeURIComponent(ref);
+  }
+  return 'https://www.biblegateway.com/passage/?search='+encodeURIComponent(ref)+'&version='+encodeURIComponent(v);
+}
+/* ---- Referências bíblicas: padrão "Livro capítulo:versículo" (ex.: João 3:16) ---- */
+const LIVROS_TXT = `Gênesis|gn,gen
+Êxodo|ex,exo
+Levítico|lv,lev
+Números|nm,num
+Deuteronômio|dt,deut
+Josué|js,jos
+Juízes|jz
+Rute|rt
+1 Samuel|1sm,1sam
+2 Samuel|2sm,2sam
+1 Reis|1rs
+2 Reis|2rs
+1 Crônicas|1cr,1cron
+2 Crônicas|2cr,2cron
+Esdras|ed,esd
+Neemias|ne,nee
+Ester|et,est
+Jó|job
+Salmos|sl,sal,salmo
+Provérbios|pv,prov
+Eclesiastes|ec,ecl
+Cantares de Salomão|ct,cant,cantares,canticos
+Isaías|is,isa
+Jeremias|jr,jer
+Lamentações|lm,lam
+Ezequiel|ez,eze
+Daniel|dn,dan
+Oseias|os,ose
+Joel|jl
+Amós|am
+Obadias|ob
+Jonas|jn,jon
+Miqueias|mq,miq
+Naum|na,nau
+Habacuque|hc,hab
+Sofonias|sf,sof
+Ageu|ag
+Zacarias|zc,zac
+Malaquias|ml,mal
+Mateus|mt,mat
+Marcos|mc,mar
+Lucas|lc,luc
+João|jo,joa
+Atos|at,atosdosapostolos
+Romanos|rm,rom
+1 Coríntios|1co,1cor
+2 Coríntios|2co,2cor
+Gálatas|gl,gal
+Efésios|ef,efe
+Filipenses|fp,fil
+Colossenses|cl,col
+1 Tessalonicenses|1ts,1tes
+2 Tessalonicenses|2ts,2tes
+1 Timóteo|1tm,1tim
+2 Timóteo|2tm,2tim
+Tito|tt
+Filemom|fm,flm
+Hebreus|hb,heb
+Tiago|tg,tia
+1 Pedro|1pe,1pd,1ped
+2 Pedro|2pe,2pd,2ped
+1 João|1jo
+2 João|2jo
+3 João|3jo
+Judas|jd,jud
+Apocalipse|ap,apoc`;
+function normLivro(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[ºª°.\s]/g,'').replace(/^primeir[oa]/,'1').replace(/^segund[oa]/,'2').replace(/^terceir[oa]/,'3');
+}
+const SLUGS_BO = {};
+const LIVROS_MAP = (()=>{
+  const m={};
+  const linhas=LIVROS_TXT.split('\n').map(l=>l.split('|'));
+  linhas.forEach(([nome])=>{ m[normLivro(nome)]=nome; });
+  linhas.forEach(([nome,al])=>{ al.split(',').forEach(a=>{ m[a]=nome; }); SLUGS_BO[nome]=(nome==='Jó')?'jó':al.split(',')[0]; });
+  return m;
+})();
+/* Devolve {livro,cap,ini,fim,texto} ou null se não estiver no modelo Livro capítulo:versículo */
+function parseRef(ref){
+  const t=String(ref||'').trim().replace(/\s+/g,' ');
+  const m=t.match(/^(.+?)\s*(\d{1,3})\s*[:.,]\s*(\d{1,3})(?:\s*[-–—]\s*(\d{1,3}))?$/);
+  if(!m) return null;
+  const bruto=m[1].trim().toLowerCase();
+  const livro = (bruto==='jó') ? 'Jó' : LIVROS_MAP[normLivro(m[1])];
+  if(!livro) return null;
+  const cap=+m[2], ini=+m[3], fim=m[4]?+m[4]:null;
+  if(cap<1 || ini<1 || (fim!==null && fim<=ini)) return null;
+  return {livro, cap, ini, fim, texto: livro+' '+cap+':'+ini+(fim?'-'+fim:'')};
+}
+/* Referência estruturada (livro, capítulo, versículos) mesmo quando o texto digitado não está no modelo exato */
+function refEstruturada(ref){
+  const t=String(ref||'').trim().replace(/\s+/g,' ');
+  let r=parseRef(t);
+  if(r) return r;
+  let m=t.match(/^(.+?\s*\d{1,3}\s*[:.,]\s*\d{1,3}(?:\s*[-–—]\s*\d{1,3})?)/);
+  if(m){ r=parseRef(m[1]); if(r) return r; }
+  m=t.match(/^(.+?)\s*(\d{1,3})(?!\d)/);
+  if(m){
+    const bruto=m[1].trim().toLowerCase();
+    const livro=(bruto==='jó')?'Jó':LIVROS_MAP[normLivro(m[1])];
+    if(livro) return {livro, cap:+m[2], ini:null, fim:null, texto:livro+' '+m[2]};
+  }
+  return null;
+}
+/* Texto enviado à busca: padronizado como "Livro capítulo:versículo" quando possível; senão, vai como foi digitado */
+function refParaBusca(ref){
+  const t=String(ref||'').trim();
+  const r=parseRef(t);
+  if(r) return r.texto;
+  const m=t.match(/^(.+?\s*\d{1,3}\s*[:.,]\s*\d{1,3}(?:\s*[-–—]\s*\d{1,3})?)/);
+  if(m){ const r2=parseRef(m[1]); if(r2) return r2.texto; }
+  return t;
+}
+function linkVerso(ref){
+  if(!ref||!ref.trim()) return '';
+  return '<a class="verse" href="'+escapeAttr(bibleUrl(refParaBusca(ref)))+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(ref.trim())+'</a>';
+}
+function abrirVersiculo(ref){
+  ref=(ref||'').trim();
+  if(!ref){ alert('Preencha o versículo primeiro.'); return; }
+  window.open(bibleUrl(refParaBusca(ref)),'_blank','noopener');
+}
+function fmtDataCurta(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function fmtDataHora(iso){ const dt=new Date(iso); return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+
+/* ============ ESTADO ============ */
+let state = {
+  tab:'lista',
+  busca:'',
+  editor:null,
+  editorErro:'',
+  modal:null,
+  iaPedido:'',
+  iaLoading:false,
+  iaErro:'',
+  iaFromEditor:false
+};
+
+function esbocoVazio(){
+  return { id:null, titulo:'', tema:'', textoBase:'', data:'', introducao:'',
+    pontos:[{id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:''}],
+    conclusao:'', aplicacao:'', observacoes:'', links:[], criadoEm:null };
+}
+
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML = viewApp();
+  bindApp();
+  if(state.modal){ renderModal(); }
+}
+
+function viewApp(){
+  const tabs=[['lista','Esboços'],['editor', state.editor && state.editor.id ? 'Editando' : 'Novo esboço'],['config','Configurações']];
+  return `
+    <header class="topbar">
+      <div class="brand"><div class="tag">Pregação</div><h1>Esboços de Pregação</h1></div>
+    </header>
+    <nav class="tabs">
+      ${tabs.map(([id,label])=>`<button data-tab="${id}" class="${state.tab===id?'active':''}">${label}</button>`).join('')}
+    </nav>
+    <main>${pageContent()}</main>
+  `;
+}
+function pageContent(){
+  switch(state.tab){
+    case 'lista': return viewLista();
+    case 'editor': return viewEditor();
+    case 'config': return viewConfig();
+    default: return '';
+  }
+}
+function bindApp(){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click', ()=>{
+    if(b.dataset.tab==='editor' && !state.editor){ state.editor=esbocoVazio(); }
+    state.tab=b.dataset.tab; state.modal=null; render();
+  }));
+  bindPage();
+}
+
+/* ============ LISTA ============ */
+function viewLista(){
+  const busca = state.busca.toLowerCase();
+  const esbocos = DB.getEsbocos()
+    .filter(e=> e.titulo.toLowerCase().includes(busca) || (e.tema||'').toLowerCase().includes(busca) || (e.textoBase||'').toLowerCase().includes(busca))
+    .sort((a,b)=> (b.data||'').localeCompare(a.data||'') || (b.criadoEm||'').localeCompare(a.criadoEm||''));
+  return `
+    <div class="page-head"><div><h2>Esboços</h2><div class="sub">Seus esboços de pregação salvos</div></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn secondary small" id="btn-ia">🤖 Buscar com IA</button><button class="btn small" id="btn-novo">+ Novo esboço</button></div>
+    </div>
+    <div class="toolbar"><div class="search-box"><input type="text" id="busca" placeholder="Buscar por título, tema ou texto-base..." value="${state.busca}"></div></div>
+    ${esbocos.length===0?`<div class="card"><div class="empty">Nenhum esboço encontrado. Crie o primeiro em "Novo esboço".</div></div>`:
+      esbocos.map(e=>`
+      <div class="esboco-card">
+        <h3>${e.titulo||'(sem título)'}</h3>
+        <div class="meta">
+          ${e.data?`<span>📅 ${fmtDataCurta(e.data)}</span>`:''}
+          ${e.textoBase?`<span>📖 ${linkVerso(e.textoBase)}</span>`:''}
+          ${e.tema?`<span class="badge">${e.tema}</span>`:''}
+          <span>${e.pontos.filter(p=>p.titulo||p.texto).length} ponto(s)</span>
+        </div>
+        <div class="row-actions">
+          <button class="btn secondary small" data-editar="${e.id}">Editar</button>
+          <button class="btn ghost small" data-visualizar="${e.id}">Visualizar / Imprimir</button>
+          <button class="btn ghost small" data-duplicar="${e.id}">Duplicar</button>
+          <button class="btn danger small" data-excluir="${e.id}">Excluir</button>
+        </div>
+      </div>`).join('')}
+  `;
+}
+
+/* ============ EDITOR ============ */
+function viewEditor(){
+  const e = state.editor || esbocoVazio();
+  return `
+    <div class="page-head"><div><h2>${e.id?'Editar esboço':'Novo esboço'}</h2><div class="sub">Preencha a estrutura da sua pregação</div></div><button type="button" class="btn secondary small" id="btn-ia-editor">🤖 Buscar com IA</button></div>
+    ${state.editorErro?`<div class="error-msg">${state.editorErro}</div>`:''}
+    <form id="form-editor">
+      <div class="card">
+        <div class="field"><label>Título da pregação</label><input type="text" id="ed-titulo" required value="${e.titulo||''}" placeholder="Ex: A fé que vence o mundo"></div>
+        <div class="row2">
+          <div class="field"><label>Texto-base</label><div class="inline-row"><input type="text" id="ed-base" value="${e.textoBase||''}" placeholder="Ex: João 3:16"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div></div>
+          <div class="field"><label>Tema / assunto</label><input type="text" id="ed-tema" value="${e.tema||''}" placeholder="Ex: Fé, Vitória"></div>
+        </div>
+        <div class="field" style="max-width:220px;"><label>Data</label><input type="date" id="ed-data" value="${e.data||''}"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:16px;">Introdução</h3>
+        <div class="field" style="margin-top:10px;"><textarea id="ed-introducao" placeholder="Como você vai introduzir o tema...">${e.introducao||''}</textarea></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font-size:16px;">Pontos principais</h3>
+          <button type="button" class="btn secondary small" id="btn-add-ponto">+ Adicionar ponto</button>
+        </div>
+        <div id="pontos-wrap" style="margin-top:12px;">
+          ${e.pontos.map((p,idx)=>`
+            <div class="ponto-card" data-ponto-id="${p.id}">
+              <div class="ponto-head">
+                <span class="ponto-num">Ponto ${idx+1}</span>
+                ${e.pontos.length>1?`<button type="button" class="remove-x" data-remover-ponto="${p.id}">✕</button>`:''}
+              </div>
+              <div class="field"><label>Título do ponto</label><input type="text" class="ponto-titulo" value="${p.titulo||''}" placeholder="Ex: A fé nasce da Palavra"></div>
+              <div class="field"><label>Versículo de apoio (opcional)</label><div class="inline-row"><input type="text" class="ponto-versiculo" value="${p.versiculo||''}" placeholder="Ex: Romanos 10:17"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div></div>
+              <div class="field" style="margin-bottom:0;"><label>Explicação / desenvolvimento</label><textarea class="ponto-texto" placeholder="Desenvolva esse ponto...">${p.texto||''}</textarea></div>
+              <div class="field" style="margin:14px 0 0;"><label>Aplicação prática deste ponto</label><textarea class="ponto-aplicacao" placeholder="O que a igreja deve fazer com este ponto...">${p.aplicacao||''}</textarea></div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:16px;">Conclusão</h3>
+        <div class="field" style="margin-top:10px;"><textarea id="ed-conclusao" placeholder="Como você vai encerrar...">${e.conclusao||''}</textarea></div>
+      </div>
+
+      ${(e.aplicacao&&e.aplicacao.trim())?`<div class="card">
+        <h3 style="font-size:16px;">Aplicação prática geral</h3>
+        <div class="field" style="margin-top:10px; margin-bottom:0;"><textarea id="ed-aplicacao" placeholder="Apague o texto se não quiser mais esta seção.">${e.aplicacao||''}</textarea></div>
+      </div>`:''}
+
+      <div class="card">
+        <h3 style="font-size:16px;">Observações (opcional)</h3>
+        <div class="field" style="margin-top:10px; margin-bottom:0;"><textarea id="ed-observacoes" placeholder="Ilustrações, lembretes, referências extras...">${e.observacoes||''}</textarea></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="font-size:16px;">Links de referência</h3>
+          <button type="button" class="btn secondary small" id="btn-add-link">+ Adicionar link</button>
+        </div>
+        <div style="margin-top:12px;">
+          ${(e.links||[]).length===0?`<div class="empty" style="padding:10px;">Nenhum link. Adicione sites, vídeos ou estudos de apoio.</div>`:(e.links||[]).map(l=>`
+            <div class="link-card" data-link-id="${l.id}">
+              <div class="ponto-head"><span class="ponto-num">Link</span><button type="button" class="remove-x" data-remover-link="${l.id}">✕</button></div>
+              <div class="field"><label>Título (opcional)</label><input type="text" class="link-titulo" value="${escapeAttr(l.titulo)}" placeholder="Ex: Estudo sobre a fé"></div>
+              <div class="field" style="margin-bottom:0;"><label>Endereço (URL)</label><div class="inline-row"><input type="text" class="link-url" value="${escapeAttr(l.url)}" placeholder="https://..."><button type="button" class="btn ghost small" data-abrir-link>Abrir</button></div></div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:4px;">
+        <button type="button" class="btn ghost" id="btn-cancelar-editor">Cancelar</button>
+        <button type="submit" class="btn">Salvar esboço</button>
+      </div>
+    </form>
+  `;
+}
+
+/* ============ CONFIGURAÇÕES ============ */
+function viewConfig(){
+  const cfg=getCfg();
+  const tam=cfg.fonteTam||FONTE_PADRAO.tam, cor=cfg.fonteCor||FONTE_PADRAO.cor;
+  const cores=[['#2A2420','Padrão'],['#000000','Preto'],['#333333','Cinza escuro'],['#1F2A5C','Azul escuro'],['#3B3486','Roxo'],['#4A3320','Marrom'],['#1E4D2B','Verde escuro']];
+  return `
+    <div class="page-head"><div><h2>Configurações</h2><div class="sub">Aparência, Bíblia online e backup</div></div></div>
+    <div class="card" style="max-width:420px;">
+      <h3 style="font-size:16px;">Backup dos dados</h3>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Exporte todos os esboços em um arquivo, ou importe um backup salvo anteriormente.</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn secondary" id="btn-exportar" style="width:auto; flex:1;">Exportar dados</button>
+        <button class="btn secondary" id="btn-importar" style="width:auto; flex:1;">Importar dados</button>
+        <input type="file" id="input-importar" accept="application/json" style="display:none;">
+      </div>
+    </div>
+    <div class="card" style="max-width:420px;">
+      <h3 style="font-size:16px;">Visualização</h3>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Tamanho e cor da letra ao visualizar (e imprimir) um esboço.</div>
+      <div class="field"><label>Tamanho da letra: <span id="tam-valor">${tam}</span> px</label>
+        <div class="tam-row">
+          <button type="button" class="btn ghost small" id="tam-menos" aria-label="Diminuir">A−</button>
+          <input type="range" class="tam" id="cfg-tam" min="12" max="32" step="1" value="${tam}">
+          <button type="button" class="btn ghost small" id="tam-mais" aria-label="Aumentar">A+</button>
+        </div>
+      </div>
+      <div class="field"><label>Cor da letra</label>
+        <div class="swatches">
+          ${cores.map(([hex,nome])=>`<button type="button" class="swatch ${hex.toLowerCase()===cor.toLowerCase()?'sel':''}" data-cor="${hex}" title="${nome}" aria-label="${nome}" style="background:${hex};"></button>`).join('')}
+          <input type="color" class="cor-livre" id="cfg-cor" value="${cor}" title="Escolher outra cor">
+        </div>
+      </div>
+      <div class="preview-box" id="preview-visual"><strong>Pré-visualização</strong><br>Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito.</div>
+      <button type="button" class="btn ghost small" id="btn-restaurar-visual" style="margin-top:14px;">Restaurar padrão</button>
+    </div>
+    <div class="card" style="max-width:420px;">
+      <h3 style="font-size:16px;">Estilo de cada tópico</h3>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 10px;">Cor, <b>negrito</b> e <i>itálico</i> de cada parte do esboço na visualização. O nome de cada linha já mostra o resultado.</div>
+      ${Object.keys(ESTILOS).map(linhaEstilo).join('')}
+      <button type="button" class="btn ghost small" id="btn-restaurar-estilos" style="margin-top:14px;">Restaurar todos os tópicos</button>
+    </div>
+    <div class="card" style="max-width:420px;">
+      <h3 style="font-size:16px;">Bíblia online</h3>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Escolha o site e a versão usados quando você abre um versículo.</div>
+      <div class="field"><label>Site de pesquisa</label>
+        <select id="cfg-site"><option value="biblegateway" ${siteBusca()==='biblegateway'?'selected':''}>BibleGateway</option><option value="bibliaonline" ${siteBusca()==='bibliaonline'?'selected':''}>Bíblia Online (bibliaonline.com.br)</option></select>
+      </div>
+      <div class="field" style="margin-bottom:0;"><label>Versão</label>
+        <select id="cfg-versao">${opcoesVersao()}</select>
+      </div>
+    </div>
+    <div class="card" style="max-width:420px;">
+      <h3 style="font-size:16px;">Inteligência artificial</h3>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Opcional. Com uma chave da API da Anthropic, o app gera esboços direto na tela. Sem a chave, o botão abre o Claude no navegador com o pedido pronto. A chave fica só neste aparelho e não entra no backup.</div>
+      ${cfg.apiKey?`<div class="ok-msg">Chave salva neste aparelho.</div><button class="btn ghost small" id="btn-remover-chave">Remover chave</button>`:`<div class="field"><label>Chave da API</label><input type="password" id="cfg-apikey" placeholder="sk-ant-..." autocomplete="off"></div><button class="btn secondary small" id="btn-salvar-chave">Salvar chave</button>`}
+    </div>
+    <div class="card" style="max-width:420px; border-color:var(--danger); background:var(--danger-soft);">
+      <h3 style="color:var(--danger); font-size:16px;">Zona de risco</h3>
+      <div class="sub" style="color:var(--ink); font-size:13px; margin:8px 0 14px;">
+        Apaga permanentemente todos os esboços salvos. <strong>Essa ação não pode ser desfeita.</strong> Se quiser guardar os dados antes, use "Exportar dados" acima.
+      </div>
+      <button class="btn danger" id="btn-apagar-tudo" style="width:auto;">Apagar todos os dados</button>
+    </div>
+  `;
+}
+
+/* ============ EVENTOS POR PÁGINA ============ */
+function bindPage(){
+  if(state.tab==='lista'){
+    document.getElementById('btn-novo').addEventListener('click', ()=>{ state.editor=esbocoVazio(); state.editorErro=''; state.tab='editor'; render(); });
+    document.getElementById('btn-ia').addEventListener('click', ()=>abrirIA(false));
+    const busca=document.getElementById('busca');
+    busca.addEventListener('input', e=>{ state.busca=e.target.value; render(); const i=document.getElementById('busca'); i.focus(); i.selectionStart=i.value.length; });
+    document.querySelectorAll('[data-editar]').forEach(b=>b.addEventListener('click', ()=>{
+      const esb = DB.getEsbocos().find(x=>x.id===b.dataset.editar);
+      state.editor = JSON.parse(JSON.stringify(esb)); state.editor.links = state.editor.links||[];
+      state.editorErro=''; state.tab='editor'; render();
+    }));
+    document.querySelectorAll('[data-visualizar]').forEach(b=>b.addEventListener('click', ()=>{
+      const esb = DB.getEsbocos().find(x=>x.id===b.dataset.visualizar);
+      state.modal={type:'visualizar', payload:esb}; render();
+    }));
+    document.querySelectorAll('[data-duplicar]').forEach(b=>b.addEventListener('click', ()=>{
+      const esb = DB.getEsbocos().find(x=>x.id===b.dataset.duplicar);
+      const copia = JSON.parse(JSON.stringify(esb));
+      copia.id=uid(); copia.titulo = copia.titulo + ' (cópia)'; copia.criadoEm=new Date().toISOString();
+      copia.pontos.forEach(p=>p.id=uid());
+      const lista = DB.getEsbocos(); lista.push(copia); DB.setEsbocos(lista);
+      render();
+    }));
+    document.querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click', ()=>{
+      if(confirm('Excluir este esboço? Essa ação não pode ser desfeita.')){
+        DB.setEsbocos(DB.getEsbocos().filter(x=>x.id!==b.dataset.excluir)); render();
+      }
+    }));
+  }
+  if(state.tab==='editor'){
+    document.getElementById('btn-add-ponto').addEventListener('click', ()=>{
+      sincronizarEditorComDOM();
+      state.editor.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:''});
+      render();
+    });
+    document.querySelectorAll('[data-remover-ponto]').forEach(b=>b.addEventListener('click', ()=>{
+      sincronizarEditorComDOM();
+      state.editor.pontos = state.editor.pontos.filter(p=>p.id!==b.dataset.removerPonto);
+      render();
+    }));
+    document.getElementById('btn-ia-editor').addEventListener('click', ()=>{ sincronizarEditorComDOM(); abrirIA(true); });
+    document.querySelectorAll('[data-abrir-verso]').forEach(b=>b.addEventListener('click', ()=>abrirVersiculo(b.previousElementSibling.value)));
+    document.querySelectorAll('[data-abrir-link]').forEach(b=>b.addEventListener('click', ()=>{ const u=normalizeUrl(b.previousElementSibling.value); if(u) window.open(u,'_blank','noopener'); }));
+    document.getElementById('btn-add-link').addEventListener('click', ()=>{ sincronizarEditorComDOM(); state.editor.links.push({id:uid(), titulo:'', url:''}); render(); });
+    document.querySelectorAll('[data-remover-link]').forEach(b=>b.addEventListener('click', ()=>{ sincronizarEditorComDOM(); state.editor.links = state.editor.links.filter(l=>l.id!==b.dataset.removerLink); render(); }));
+    document.getElementById('btn-cancelar-editor').addEventListener('click', ()=>{
+      state.editor=null; state.editorErro=''; state.tab='lista'; render();
+    });
+    document.getElementById('form-editor').addEventListener('submit', e=>{
+      e.preventDefault();
+      sincronizarEditorComDOM();
+      const ed = state.editor;
+      if(!ed.titulo || !ed.titulo.trim()){ state.editorErro='Preencha o título da pregação.'; render(); return; }
+      ed.links = (ed.links||[]).filter(l=>l.url && l.url.trim()).map(l=>({...l, url:normalizeUrl(l.url)}));
+      let lista = DB.getEsbocos();
+      if(ed.id){
+        lista = lista.map(x=>x.id===ed.id?ed:x);
+      }else{
+        ed.id=uid(); ed.criadoEm=new Date().toISOString();
+        lista.push(ed);
+      }
+      DB.setEsbocos(lista);
+      state.editor=null; state.editorErro=''; state.tab='lista';
+      render();
+    });
+  }
+  if(state.tab==='config'){
+    document.getElementById('btn-exportar').addEventListener('click', exportarDados);
+    document.getElementById('btn-importar').addEventListener('click', ()=>document.getElementById('input-importar').click());
+    document.getElementById('input-importar').addEventListener('change', importarDados);
+    document.getElementById('btn-apagar-tudo').addEventListener('click', apagarTudo);
+    const salvarVisual=(tam,cor)=>{
+      const c=getCfg();
+      if(tam!=null) c.fonteTam=tam;
+      if(cor!=null) c.fonteCor=cor;
+      setCfg(c); aplicarVisualizacao();
+      document.querySelectorAll('.est-row').forEach(atualizarLinhaEstilo);
+    };
+    const sliderTam=document.getElementById('cfg-tam');
+    const mudarTam=v=>{
+      v=Math.min(32,Math.max(12,v)); sliderTam.value=v;
+      document.getElementById('tam-valor').textContent=v;
+      salvarVisual(v,null);
+    };
+    sliderTam.addEventListener('input', e=>mudarTam(+e.target.value));
+    document.getElementById('tam-menos').addEventListener('click', ()=>mudarTam(+sliderTam.value-1));
+    document.getElementById('tam-mais').addEventListener('click', ()=>mudarTam(+sliderTam.value+1));
+    const marcarSwatch=cor=>document.querySelectorAll('.swatch').forEach(b=>b.classList.toggle('sel', b.dataset.cor.toLowerCase()===cor.toLowerCase()));
+    document.querySelectorAll('.swatch').forEach(b=>b.addEventListener('click', ()=>{
+      document.getElementById('cfg-cor').value=b.dataset.cor; marcarSwatch(b.dataset.cor); salvarVisual(null,b.dataset.cor);
+    }));
+    document.getElementById('cfg-cor').addEventListener('input', e=>{ marcarSwatch(e.target.value); salvarVisual(null,e.target.value); });
+    const linhas=()=>document.querySelectorAll('.est-row');
+    linhas().forEach(row=>{
+      const k=row.dataset.est;
+      row.querySelector('.est-cor').addEventListener('input', e=>{ setEstilo(k,{c:e.target.value}); atualizarLinhaEstilo(row); });
+      row.querySelector('.est-b').addEventListener('click', ()=>{ setEstilo(k,{b:!estEfetivo(k).b}); atualizarLinhaEstilo(row); });
+      row.querySelector('.est-i').addEventListener('click', ()=>{ setEstilo(k,{i:!estEfetivo(k).i}); atualizarLinhaEstilo(row); });
+      row.querySelector('.est-reset').addEventListener('click', ()=>{ setEstilo(k,null); atualizarLinhaEstilo(row); });
+    });
+    document.getElementById('btn-restaurar-estilos').addEventListener('click', ()=>{
+      if(!confirm('Restaurar o estilo padrão de todos os tópicos?')) return;
+      const c=getCfg(); delete c.estilos; setCfg(c); aplicarVisualizacao(); render();
+    });
+    document.getElementById('btn-restaurar-visual').addEventListener('click', ()=>{
+      const c=getCfg(); delete c.fonteTam; delete c.fonteCor; setCfg(c); aplicarVisualizacao(); render();
+    });
+    document.getElementById('cfg-site').addEventListener('change', e=>{
+      const c=getCfg(); c.site=e.target.value; setCfg(c);
+      document.getElementById('cfg-versao').innerHTML=opcoesVersao();
+    });
+    document.getElementById('cfg-versao').addEventListener('change', e=>{ const c=getCfg(); c.versao=e.target.value; setCfg(c); });
+    const bs=document.getElementById('btn-salvar-chave');
+    if(bs) bs.addEventListener('click', ()=>{ const k=document.getElementById('cfg-apikey').value.trim(); if(!k) return; const c=getCfg(); c.apiKey=k; setCfg(c); render(); });
+    const br=document.getElementById('btn-remover-chave');
+    if(br) br.addEventListener('click', ()=>{ const c=getCfg(); delete c.apiKey; setCfg(c); render(); });
+  }
+}
+
+/* Lê os valores atuais dos campos do formulário e grava em state.editor antes de re-renderizar */
+function sincronizarEditorComDOM(){
+  const ed = state.editor;
+  const $ = id => document.getElementById(id);
+  if($('ed-titulo')) ed.titulo = $('ed-titulo').value;
+  if($('ed-base')) ed.textoBase = $('ed-base').value;
+  if($('ed-tema')) ed.tema = $('ed-tema').value;
+  if($('ed-data')) ed.data = $('ed-data').value;
+  if($('ed-introducao')) ed.introducao = $('ed-introducao').value;
+  if($('ed-conclusao')) ed.conclusao = $('ed-conclusao').value;
+  if($('ed-aplicacao')) ed.aplicacao = $('ed-aplicacao').value;
+  if($('ed-observacoes')) ed.observacoes = $('ed-observacoes').value;
+  document.querySelectorAll('.ponto-card').forEach(card=>{
+    const id = card.dataset.pontoId;
+    const p = ed.pontos.find(x=>x.id===id);
+    if(!p) return;
+    p.titulo = card.querySelector('.ponto-titulo').value;
+    p.versiculo = card.querySelector('.ponto-versiculo').value;
+    p.texto = card.querySelector('.ponto-texto').value;
+    const apEl = card.querySelector('.ponto-aplicacao'); if(apEl) p.aplicacao = apEl.value;
+  });
+  ed.links = ed.links||[];
+  document.querySelectorAll('.link-card').forEach(card=>{
+    const l = ed.links.find(x=>x.id===card.dataset.linkId);
+    if(!l) return;
+    l.titulo = card.querySelector('.link-titulo').value;
+    l.url = card.querySelector('.link-url').value;
+  });
+}
+
+/* ============ MODAL: VISUALIZAR / IMPRIMIR ============ */
+function renderModal(){
+  const holder=document.createElement('div');
+  holder.innerHTML = modalHTML();
+  document.getElementById('app').appendChild(holder.firstElementChild);
+  bindModal();
+}
+function modalHTML(){
+  if(state.modal.type==='visualizar') return modalVisualizar(state.modal.payload);
+  if(state.modal.type==='ia') return modalIA();
+  return '';
+}
+function modalVisualizar(e){
+  const pontos = e.pontos.filter(p=>p.titulo||p.texto||p.aplicacao);
+  return `
+  <div class="overlay overlay-full" id="overlay">
+    <div class="modal modal-full">
+      <div class="manuscrito">
+        ${e.tema?`<div class="m-tema">${e.tema}</div>`:''}
+        <h1 class="s-titulo">${e.titulo||'(sem título)'}</h1>
+        ${e.textoBase?`<div class="m-base s-base">${linkVerso(e.textoBase)}</div>`:''}
+        <div class="m-data">${e.data?fmtDataCurta(e.data):''}</div>
+
+        ${e.introducao?`<h3 class="m-sec s-secao">Introdução</h3><p class="s-intro">${escapeHtml(e.introducao)}</p>`:''}
+
+        ${pontos.length?`<h3 class="m-sec s-secao">Pontos principais</h3>
+        ${pontos.map((p,idx)=>`
+          <div class="m-ponto">
+            <div class="m-ponto-titulo s-ptitulo">${idx+1}. ${escapeHtml(p.titulo||'')}</div>
+            ${p.versiculo?`<div class="m-ponto-vers s-vers">${linkVerso(p.versiculo)}</div>`:''}
+            ${p.texto?`<p class="s-ptexto">${escapeHtml(p.texto)}</p>`:''}
+            ${p.aplicacao?`<div class="m-ponto-aplic-label s-secao">Aplicação prática</div><p class="s-aplic">${escapeHtml(p.aplicacao)}</p>`:''}
+          </div>`).join('')}`:''}
+
+        ${e.conclusao?`<h3 class="m-sec s-secao">Conclusão</h3><p class="s-concl">${escapeHtml(e.conclusao)}</p>`:''}
+        ${e.aplicacao?`<h3 class="m-sec s-secao">Aplicação prática</h3><p class="s-aplic">${escapeHtml(e.aplicacao)}</p>`:''}
+        ${e.observacoes?`<h3 class="m-sec s-secao">Observações</h3><p class="s-obs">${escapeHtml(e.observacoes)}</p>`:''}
+        ${(e.links||[]).length?`<h3 class="m-sec">Links de referência</h3>${e.links.map(l=>`<p style="margin:0 0 6px;"><a class="verse" href="${escapeAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.titulo||l.url)}</a></p>`).join('')}`:''}
+      </div>
+      <div class="modal-actions no-print">
+        <button class="btn ghost" id="btn-fechar-visualizar">Fechar</button>
+        <button class="btn" id="btn-imprimir-visualizar">Imprimir</button>
+      </div>
+    </div>
+  </div>`;
+}
+function escapeHtml(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function bindModal(){
+  const overlay=document.getElementById('overlay');
+  overlay.addEventListener('click', e=>{ if(e.target.id==='overlay' && !state.iaLoading){ state.modal=null; render(); } });
+  if(state.modal.type==='visualizar'){
+    document.getElementById('btn-fechar-visualizar').addEventListener('click', ()=>{ state.modal=null; render(); });
+    document.getElementById('btn-imprimir-visualizar').addEventListener('click', ()=>window.print());
+  }
+  if(state.modal.type==='ia'){
+    document.getElementById('ia-pedido').addEventListener('input', e=>{ state.iaPedido=e.target.value; });
+    document.getElementById('btn-ia-fechar').addEventListener('click', ()=>{ if(state.iaLoading) return; state.modal=null; render(); });
+    document.getElementById('btn-ia-claude').addEventListener('click', ()=>{
+      if(!state.iaPedido.trim()){ state.iaErro='Descreva o tema ou a passagem primeiro.'; render(); return; }
+      window.open('https://claude.ai/new?q='+encodeURIComponent(montarPromptIA(state.iaPedido,false)),'_blank','noopener');
+    });
+    const g=document.getElementById('btn-ia-gerar');
+    if(g) g.addEventListener('click', gerarComIA);
+  }
+}
+
+/* ============ IA ============ */
+function abrirIA(fromEditor){
+  const ed = state.editor;
+  let pedido='';
+  if(fromEditor && ed){
+    pedido=[ed.titulo, ed.textoBase&&('texto-base: '+ed.textoBase), ed.tema&&('tema: '+ed.tema)].filter(Boolean).join(' — ');
+  }
+  state.iaPedido=pedido; state.iaErro=''; state.iaLoading=false; state.iaFromEditor=!!fromEditor;
+  state.modal={type:'ia'}; render();
+}
+function modalIA(){
+  const cfg=getCfg();
+  return `
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h3>Buscar sermão com IA</h3>
+      ${state.iaErro?`<div class="error-msg">${escapeHtml(state.iaErro)}</div>`:''}
+      <div class="field"><label>Sobre o que é a pregação? (tema, passagem ou pergunta)</label>
+        <textarea id="ia-pedido" placeholder="Ex: Um esboço sobre perdão, baseado em Mateus 18:21-35">${escapeHtml(state.iaPedido)}</textarea></div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        ${cfg.apiKey?`<button class="btn" id="btn-ia-gerar" ${state.iaLoading?'disabled':''}>${state.iaLoading?'Gerando esboço...':'Gerar esboço aqui no app'}</button>`:''}
+        <button class="btn ${cfg.apiKey?'secondary':''}" id="btn-ia-claude">Abrir no Claude (navegador)</button>
+        <button class="btn ghost" id="btn-ia-fechar">Fechar</button>
+      </div>
+      ${cfg.apiKey?'':`<div class="sub" style="margin-top:12px; color:var(--ink-soft); font-size:12.5px;">Para gerar direto aqui no app, cadastre sua chave da API em Configurações.</div>`}
+    </div>
+  </div>`;
+}
+function montarPromptIA(pedido, comoJSON){
+  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento e aplicação prática do ponto) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
+  if(comoJSON){
+    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":""}],"conclusao":""}';
+  }
+  return t;
+}
+async function gerarComIA(){
+  const cfg=getCfg();
+  if(!state.iaPedido.trim()){ state.iaErro='Descreva o tema ou a passagem primeiro.'; render(); return; }
+  const rascunho = state.editor && (state.editor.titulo||state.editor.introducao||state.editor.conclusao);
+  if(rascunho && !confirm('O rascunho aberto no editor será substituído pelo esboço gerado. Continuar?')) return;
+  state.iaLoading=true; state.iaErro=''; render();
+  try{
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':cfg.apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({model:MODELO_IA, max_tokens:4000, messages:[{role:'user', content:montarPromptIA(state.iaPedido,true)}]})
+    });
+    if(!resp.ok){
+      let msg='Erro '+resp.status;
+      try{ const j=await resp.json(); if(j.error&&j.error.message) msg+=': '+j.error.message; }catch(_){}
+      throw new Error(msg);
+    }
+    const data = await resp.json();
+    const texto = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const i=texto.indexOf('{'), j=texto.lastIndexOf('}');
+    if(i<0 || j<=i) throw new Error('Resposta da IA em formato inesperado. Tente de novo.');
+    const r = JSON.parse(texto.slice(i,j+1));
+    const base = (state.iaFromEditor && state.editor) ? state.editor : esbocoVazio();
+    base.titulo = String(r.titulo||'');
+    base.tema = String(r.tema||'');
+    base.textoBase = String(r.textoBase||'');
+    base.introducao = String(r.introducao||'');
+    base.conclusao = String(r.conclusao||'');
+    base.aplicacao = String(r.aplicacao||'');
+    base.pontos = (Array.isArray(r.pontos)?r.pontos:[]).map(p=>({id:uid(), titulo:String(p.titulo||''), versiculo:String(p.versiculo||''), texto:String(p.texto||''), aplicacao:String(p.aplicacao||'')}));
+    if(base.pontos.length===0) base.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:''});
+    base.links = base.links||[];
+    state.editor = base; state.editorErro='';
+    state.iaLoading=false; state.modal=null; state.tab='editor';
+    render();
+  }catch(err){
+    state.iaLoading=false;
+    state.iaErro = (err instanceof TypeError) ? 'Sem conexão com a internet, ou o navegador bloqueou o pedido.' : err.message;
+    render();
+  }
+}
+
+/* ============ BACKUP ============ */
+function exportarDados(){
+  const backup = { tipo:'esboco-pregacao-backup', versao:1, exportadoEm:new Date().toISOString(), esbocos: DB.getEsbocos() };
+  const blob = new Blob([JSON.stringify(backup,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='backup-esbocos-pregacao-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function importarDados(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    let backup;
+    try{ backup = JSON.parse(reader.result); }
+    catch(err){ alert('Arquivo inválido. Selecione um arquivo de backup gerado pelo sistema.'); e.target.value=''; return; }
+    if(!backup || !Array.isArray(backup.esbocos)){ alert('Arquivo inválido ou incompleto. Nenhum dado foi alterado.'); e.target.value=''; return; }
+    if(!confirm('Importar este backup vai SUBSTITUIR todos os esboços atuais. Deseja continuar?')){ e.target.value=''; return; }
+    DB.setEsbocos(backup.esbocos);
+    alert('Backup importado com sucesso.');
+    state.tab='lista'; render();
+  };
+  reader.readAsText(file);
+}
+function apagarTudo(){
+  if(!confirm('ATENÇÃO: isso vai apagar PERMANENTEMENTE todos os esboços salvos.\n\nOs dados NÃO poderão ser recuperados depois. Deseja continuar?')) return;
+  const digitado = prompt('Para confirmar, digite APAGAR (em letras maiúsculas):');
+  if(digitado !== 'APAGAR'){ alert('Confirmação incorreta. Nenhum dado foi apagado.'); return; }
+  localStorage.removeItem('ep_esbocos');
+  state.tab='lista'; state.busca=''; state.editor=null;
+  alert('Todos os dados foram apagados.');
+  render();
+}
+
+aplicarVisualizacao();
+render();
+</script>
+</body>
+</html>
