@@ -440,7 +440,7 @@ function viewLista(){
     .sort((a,b)=> (b.data||'').localeCompare(a.data||'') || (b.criadoEm||'').localeCompare(a.criadoEm||''));
   return `
     <div class="page-head"><div><h2>Esboços</h2><div class="sub">Seus esboços de pregação salvos</div></div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn secondary small" id="btn-ia">🤖 Buscar com IA</button><button class="btn small" id="btn-novo">+ Novo esboço</button></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;"><button class="btn secondary small" id="btn-importar-lista">📥 Importar</button><button class="btn secondary small" id="btn-ia">🤖 Buscar com IA</button><button class="btn small" id="btn-novo">+ Novo esboço</button></div>
     </div>
     <div class="toolbar"><div class="search-box"><input type="text" id="busca" placeholder="Buscar por título, tema ou texto-base..." value="${state.busca}"></div></div>
     ${esbocos.length===0?`<div class="card"><div class="empty">Nenhum esboço encontrado. Crie o primeiro em "Novo esboço".</div></div>`:
@@ -457,6 +457,7 @@ function viewLista(){
           <button class="btn secondary small" data-editar="${e.id}">Editar</button>
           <button class="btn ghost small" data-visualizar="${e.id}">Visualizar / Imprimir</button>
           <button class="btn ghost small" data-duplicar="${e.id}">Duplicar</button>
+          <button class="btn ghost small" data-compartilhar="${e.id}">Compartilhar</button>
           <button class="btn danger small" data-excluir="${e.id}">Excluir</button>
         </div>
       </div>`).join('')}
@@ -551,11 +552,12 @@ function viewConfig(){
     <div class="page-head"><div><h2>Configurações</h2><div class="sub">Aparência, Bíblia online e backup</div></div></div>
     <div class="card" style="max-width:420px;">
       <h3 style="font-size:16px;">Backup dos dados</h3>
-      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Exporte todos os esboços em um arquivo, ou importe um backup salvo anteriormente.</div>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Leve seus esboços para outro aparelho por um arquivo. Ao importar, os esboços são <strong>mesclados</strong> com os que já existem: nada é apagado e, se o mesmo esboço estiver nos dois lados, fica o mais recente. Para enviar um esboço só, use "Compartilhar" no próprio esboço.</div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn" id="btn-compartilhar" style="width:auto; flex:1 1 100%;">Compartilhar todos os esboços</button>
         <button class="btn secondary" id="btn-exportar" style="width:auto; flex:1;">Exportar dados</button>
         <button class="btn secondary" id="btn-importar" style="width:auto; flex:1;">Importar dados</button>
-        <input type="file" id="input-importar" accept="application/json" style="display:none;">
+        <input type="file" id="input-importar" accept=".json,application/json" style="display:none;">
       </div>
     </div>
     <div class="card" style="max-width:420px;">
@@ -627,11 +629,19 @@ function bindPage(){
     document.querySelectorAll('[data-duplicar]').forEach(b=>b.addEventListener('click', ()=>{
       const esb = DB.getEsbocos().find(x=>x.id===b.dataset.duplicar);
       const copia = JSON.parse(JSON.stringify(esb));
-      copia.id=uid(); copia.titulo = copia.titulo + ' (cópia)'; copia.criadoEm=new Date().toISOString();
+      copia.id=uid(); copia.titulo = copia.titulo + ' (cópia)'; copia.criadoEm=new Date().toISOString(); copia.atualizadoEm=copia.criadoEm;
       copia.pontos.forEach(p=>p.id=uid());
       const lista = DB.getEsbocos(); lista.push(copia); DB.setEsbocos(lista);
       render();
     }));
+    document.querySelectorAll('[data-compartilhar]').forEach(b=>b.addEventListener('click', ()=>{
+      const esb = DB.getEsbocos().find(x=>x.id===b.dataset.compartilhar);
+      if(esb) compartilharEsbocos([esb], 'esboco-'+slugArquivo(esb.titulo)+'.json', esb.titulo||'Esboço');
+    }));
+    document.getElementById('btn-importar-lista').addEventListener('click', ()=>{
+      const i=document.createElement('input'); i.type='file'; i.accept='.json,application/json';
+      i.addEventListener('change', importarDados); i.click();
+    });
     document.querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click', ()=>{
       if(confirm('Excluir este esboço? Essa ação não pode ser desfeita.')){
         DB.setEsbocos(DB.getEsbocos().filter(x=>x.id!==b.dataset.excluir)); render();
@@ -665,9 +675,10 @@ function bindPage(){
       ed.links = (ed.links||[]).filter(l=>l.url && l.url.trim()).map(l=>({...l, url:normalizeUrl(l.url)}));
       let lista = DB.getEsbocos();
       if(ed.id){
+        ed.atualizadoEm=new Date().toISOString();
         lista = lista.map(x=>x.id===ed.id?ed:x);
       }else{
-        ed.id=uid(); ed.criadoEm=new Date().toISOString();
+        ed.id=uid(); ed.criadoEm=new Date().toISOString(); ed.atualizadoEm=ed.criadoEm;
         lista.push(ed);
       }
       DB.setEsbocos(lista);
@@ -677,6 +688,7 @@ function bindPage(){
   }
   if(state.tab==='config'){
     document.getElementById('btn-exportar').addEventListener('click', exportarDados);
+    document.getElementById('btn-compartilhar').addEventListener('click', ()=>compartilharEsbocos(DB.getEsbocos(), 'backup-esbocos-pregacao-'+new Date().toISOString().slice(0,10)+'.json', 'Esboços de pregação'));
     document.getElementById('btn-importar').addEventListener('click', ()=>document.getElementById('input-importar').click());
     document.getElementById('input-importar').addEventListener('change', importarDados);
     document.getElementById('btn-apagar-tudo').addEventListener('click', apagarTudo);
@@ -909,14 +921,63 @@ async function gerarComIA(){
 }
 
 /* ============ BACKUP ============ */
-function exportarDados(){
-  const backup = { tipo:'esboco-pregacao-backup', versao:1, exportadoEm:new Date().toISOString(), esbocos: DB.getEsbocos() };
-  const blob = new Blob([JSON.stringify(backup,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
+function slugArquivo(t){
+  const x=String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+  return x||'sem-titulo';
+}
+function criarArquivoBackup(lista, nome){
+  const backup = { tipo:'esboco-pregacao-backup', versao:1, exportadoEm:new Date().toISOString(), esbocos: lista };
+  return new File([JSON.stringify(backup,null,2)], nome, {type:'application/json'});
+}
+function baixarArquivo(file){
+  const url = URL.createObjectURL(file);
   const a = document.createElement('a');
-  a.href=url; a.download='backup-esbocos-pregacao-'+new Date().toISOString().slice(0,10)+'.json';
+  a.href=url; a.download=file.name;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+/* Abre o menu "compartilhar" do aparelho (WhatsApp, e-mail, Drive...); sem suporte, baixa o arquivo */
+async function compartilharEsbocos(lista, nome, titulo){
+  if(!lista.length){ alert('Não há esboços para compartilhar.'); return; }
+  const file = criarArquivoBackup(lista, nome);
+  try{
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:titulo});
+      return;
+    }
+  }catch(err){
+    if(err && err.name==='AbortError') return;
+  }
+  baixarArquivo(file);
+  alert('Este navegador não abre o menu de compartilhar. O arquivo foi baixado: envie-o por WhatsApp, e-mail ou pendrive e importe no outro aparelho.');
+}
+function exportarDados(){
+  baixarArquivo(criarArquivoBackup(DB.getEsbocos(), 'backup-esbocos-pregacao-'+new Date().toISOString().slice(0,10)+'.json'));
+}
+/* Mescla esboços recebidos com os locais, sem apagar nada */
+function mesclarEsbocos(local, entrada){
+  const quando = x => x.atualizadoEm || x.criadoEm || '';
+  const lista = local.slice();
+  const r = {novos:0, atualizados:0, mantidos:0, iguais:0, copias:0};
+  entrada.forEach(inc=>{
+    if(!inc || typeof inc!=='object') return;
+    if(!inc.id) inc.id=uid();
+    if(!Array.isArray(inc.pontos)) inc.pontos=[];
+    const i = lista.findIndex(x=>x.id===inc.id);
+    if(i<0){ lista.push(inc); r.novos++; return; }
+    const atual = lista[i];
+    if(JSON.stringify(atual)===JSON.stringify(inc)){ r.iguais++; return; }
+    const ta=quando(atual), ti=quando(inc);
+    if(ti && ta && ti>ta){ lista[i]=inc; r.atualizados++; }
+    else if(ti && ta && ti<ta){ r.mantidos++; }
+    else{
+      /* mesma data (ou sem data) mas conteúdo diferente: guarda as duas versões */
+      inc.id=uid(); inc.titulo=(inc.titulo||'')+' (importado)';
+      inc.pontos.forEach(p=>p.id=uid());
+      lista.push(inc); r.copias++;
+    }
+  });
+  return {lista, ...r};
 }
 function importarDados(e){
   const file = e.target.files[0];
@@ -925,11 +986,20 @@ function importarDados(e){
   reader.onload = ()=>{
     let backup;
     try{ backup = JSON.parse(reader.result); }
-    catch(err){ alert('Arquivo inválido. Selecione um arquivo de backup gerado pelo sistema.'); e.target.value=''; return; }
+    catch(err){ alert('Arquivo inválido. Selecione um arquivo gerado por este aplicativo.'); e.target.value=''; return; }
     if(!backup || !Array.isArray(backup.esbocos)){ alert('Arquivo inválido ou incompleto. Nenhum dado foi alterado.'); e.target.value=''; return; }
-    if(!confirm('Importar este backup vai SUBSTITUIR todos os esboços atuais. Deseja continuar?')){ e.target.value=''; return; }
-    DB.setEsbocos(backup.esbocos);
-    alert('Backup importado com sucesso.');
+    const n = backup.esbocos.length;
+    if(!confirm('O arquivo tem '+n+(n===1?' esboço':' esboços')+'. Eles serão MESCLADOS com os seus: nada será apagado e, se o mesmo esboço existir nos dois lados, fica o mais recente. Continuar?')){ e.target.value=''; return; }
+    const m = mesclarEsbocos(DB.getEsbocos(), backup.esbocos);
+    DB.setEsbocos(m.lista);
+    const partes=[];
+    if(m.novos) partes.push(m.novos+(m.novos===1?' novo':' novos'));
+    if(m.atualizados) partes.push(m.atualizados+(m.atualizados===1?' atualizado':' atualizados'));
+    if(m.copias) partes.push(m.copias+(m.copias===1?' mantido como cópia (marcado "importado")':' mantidos como cópia (marcados "importado")'));
+    if(m.mantidos) partes.push(m.mantidos+(m.mantidos===1?' ignorado (o seu é mais recente)':' ignorados (os seus são mais recentes)'));
+    if(m.iguais) partes.push(m.iguais+(m.iguais===1?' já existia igual':' já existiam iguais'));
+    alert('Importação concluída.\n'+(partes.length?partes.join('\n'):'Nenhuma alteração.'));
+    e.target.value='';
     state.tab='lista'; render();
   };
   reader.readAsText(file);
