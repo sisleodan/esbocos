@@ -136,6 +136,21 @@
   .est-btn{width:34px; height:34px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--ink); font-size:15px; padding:0; flex:none;}
   .est-btn.on{background:var(--primary); color:#fff; border-color:var(--primary);}
 
+  /* Texto dos versículos */
+  .manuscrito .ref{background:#F6EBC8; border-bottom:1px dotted var(--gold); border-radius:3px; padding:0 2px; cursor:pointer;}
+  .manuscrito .ref:focus{outline:2px solid var(--primary-soft);}
+  .manuscrito .ref-inline{font-style:italic; color:var(--ink-soft); background:#FBF6E9; border-radius:3px; padding:0 3px;}
+  .manuscrito .m-vtexto{margin:6px 0 10px; padding:8px 12px; border-left:3px solid var(--gold); background:#FBF6E9; border-radius:0 8px 8px 0; font-size:.93em; line-height:1.55; color:var(--ink);}
+  .manuscrito .m-vsig, .vp-ver{font-family:var(--font-mono); font-size:.75em; letter-spacing:.06em; color:var(--gold);}
+  .manuscrito .m-vfalha{color:var(--ink-soft); font-style:italic;}
+  .vprev{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:6px;}
+  .vprev:empty{display:none;}
+  .verse-pop{position:fixed; left:8px; right:8px; bottom:8px; max-width:640px; margin:0 auto; z-index:9999; background:#fff; border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:12px 14px; max-height:45vh; overflow:auto; font-size:15px; line-height:1.55;}
+  .verse-pop .vp-head{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .verse-pop .vp-head strong{flex:1;}
+  .verse-pop .vp-x{border:none; background:none; font-size:18px; color:var(--ink-soft); padding:2px 6px;}
+  @media print{ .verse-pop{display:none !important;} }
+
   /* Configurações: pré-visualização e cores */
   .swatches{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
   .swatch{width:34px; height:34px; border-radius:50%; border:2px solid var(--border); padding:0;}
@@ -227,11 +242,12 @@ function normalizeUrl(u){ u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//
 /* ---- Site de pesquisa dos versículos ---- */
 const VERSOES_BG=[['ARA','Almeida Revista e Atualizada (ARA)'],['ARC','Almeida Revista e Corrigida (ARC)'],['NAA','Nova Almeida Atualizada (NAA)'],['NVI-PT','Nova Versão Internacional (NVI)'],['NTLH','Nova Tradução na Linguagem de Hoje (NTLH)']];
 const VERSOES_BO=[['ACF','Almeida Corrigida Fiel (ACF)'],...VERSOES_BG];
-function siteBusca(){ return getCfg().site==='bibliaonline' ? 'bibliaonline' : 'biblegateway'; }
-function versoesDoSite(site){ return site==='bibliaonline' ? VERSOES_BO : VERSOES_BG; }
+function siteBusca(){ const s=getCfg().site; return (s==='bibliaonline'||s==='openbible') ? s : 'biblegateway'; }
+function versoesDoSite(site){ return site==='openbible' ? catalogoPT() : (site==='bibliaonline' ? VERSOES_BO : VERSOES_BG); }
 function versaoEfetiva(){
-  const v=getCfg().versao;
-  return versoesDoSite(siteBusca()).some(x=>x[0]===v) ? v : 'ARA';
+  const c=getCfg(), site=siteBusca();
+  const v = site==='openbible' ? c.versaoOB : c.versao;
+  return versoesDoSite(site).some(x=>x[0]===v) ? v : (site==='openbible' ? 'pt_nvi' : 'ARA');
 }
 function opcoesVersao(){
   const ef=versaoEfetiva();
@@ -248,6 +264,16 @@ function bibleUrl(ref){
       return u;
     }
     return 'https://www.bibliaonline.com.br/'+slugV+'/busca?q='+encodeURIComponent(ref);
+  }
+  if(siteBusca()==='openbible'){
+    const base='https://thiagobodruk.github.io/open-bible/';
+    const r=refEstruturada(ref);
+    if(r){
+      let u=base+v+'/'+abrevOB(r.livro)+'/'+r.cap;
+      if(r.ini) u+='/'+r.ini+(r.fim?'-'+r.fim:'');
+      return u;
+    }
+    return base;
   }
   return 'https://www.biblegateway.com/passage/?search='+encodeURIComponent(ref)+'&version='+encodeURIComponent(v);
 }
@@ -322,6 +348,8 @@ function normLivro(s){
   return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[ºª°.\s]/g,'').replace(/^primeir[oa]/,'1').replace(/^segund[oa]/,'2').replace(/^terceir[oa]/,'3');
 }
+const LIVROS_LISTA = LIVROS_TXT.split('\n').map(l=>l.split('|')[0]);
+function indiceLivro(nome){ return LIVROS_LISTA.indexOf(nome); }
 const SLUGS_BO = {};
 const LIVROS_MAP = (()=>{
   const m={};
@@ -357,6 +385,222 @@ function refEstruturada(ref){
   }
   return null;
 }
+/* ======== Open Bible / texto dos versículos (JSON do repositório thiagobodruk/bible) ======== */
+const RAW_JSON='https://raw.githubusercontent.com/thiagobodruk/bible/master/json/';
+const VERSOES_PT=[['pt_nvi','NVI — Nova Versão Internacional'],['pt_ntlh','NTLH — Nova Tradução na Linguagem de Hoje'],['pt_acf','ACF — Almeida Corrigida Fiel'],['pt_arc','ARC — Almeida Revista e Corrigida'],['pt_ara','ARA — Almeida Revista e Atualizada'],['pt_aa','AA — Almeida Revisada Imprensa Bíblica'],['pt_avm','AVM — Ave Maria'],['pt_pastoral','Edição Pastoral'],['pt_matos','Pe. Matos Soares']];
+let CATALOGO_TENTADO=false;
+function catalogoPT(){
+  const lista=VERSOES_PT.slice();
+  (getCfg().catalogoPT||[]).forEach(([c,n])=>{ if(!lista.some(x=>x[0]===c)) lista.push([c,n]); });
+  return lista;
+}
+function siglaVersao(cod){ return String(cod||'').replace(/^pt_/,'').toUpperCase(); }
+/* Lê json/index.json (se possível) para listar também as outras traduções em português */
+async function atualizarCatalogoPT(){
+  if(CATALOGO_TENTADO) return false;
+  CATALOGO_TENTADO=true;
+  try{
+    const r=await fetch(RAW_JSON+'index.json');
+    if(!r.ok) return false;
+    const j=JSON.parse((await r.text()).replace(/^\uFEFF/,''));
+    const achados=[], vistos=new Set(VERSOES_PT.map(x=>x[0]));
+    const ehPT=x=>typeof x==='string' && /^pt_[a-z0-9_]+$/.test(x.replace(/\.json$/,''));
+    const add=(cod,nome)=>{
+      cod=cod.replace(/\.json$/,'');
+      if(vistos.has(cod)) return; vistos.add(cod);
+      const sig=siglaVersao(cod);
+      achados.push([cod, nome ? (nome.toUpperCase().includes(sig)?nome:sig+' — '+nome) : sig]);
+    };
+    const nomeDe=o=>{ for(const k of ['name','title','label','nome']) if(typeof o[k]==='string') return o[k]; return null; };
+    const visita=o=>{
+      if(Array.isArray(o)){ o.forEach(visita); return; }
+      if(!o || typeof o!=='object') return;
+      for(const k of ['code','id','file','version','key']){ if(ehPT(o[k])){ add(o[k], nomeDe(o)); break; } }
+      Object.keys(o).forEach(k=>{
+        if(ehPT(k)){ const v=o[k]; add(k, typeof v==='string' ? v : (v && typeof v==='object' ? nomeDe(v) : null)); }
+        if(o[k] && typeof o[k]==='object') visita(o[k]);
+      });
+    };
+    visita(j);
+    if(!achados.length) return false;
+    achados.sort((a,b)=>a[1].localeCompare(b[1],'pt'));
+    const c=getCfg(), antes=(c.catalogoPT||[]).length;
+    c.catalogoPT=achados; setCfg(c);
+    return achados.length!==antes;
+  }catch(err){ return false; }
+}
+function abrevOB(livro){
+  const i=indiceLivro(livro), c=(getCfg().abrevJSON||[])[i];
+  if(c) return c;
+  return livro==='Jó' ? 'job' : (livro==='Atos' ? 'atos' : SLUGS_BO[livro]);
+}
+
+/* Cache dos arquivos JSON: memória + IndexedDB (para funcionar sem internet depois do primeiro uso) */
+const BIBLIAS_MEM={}, BIBLIAS_PROM={};
+function idbAbrir(){
+  return new Promise((res,rej)=>{
+    try{
+      const r=indexedDB.open('ep_biblias',1);
+      r.onupgradeneeded=()=>r.result.createObjectStore('b');
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+    }catch(e){ rej(e); }
+  });
+}
+async function idbOp(modo, fn){
+  try{
+    const db=await idbAbrir();
+    return await new Promise((res,rej)=>{
+      const q=fn(db.transaction('b',modo).objectStore('b'));
+      q.onsuccess=()=>res(q.result===undefined?null:q.result); q.onerror=()=>rej(q.error);
+    });
+  }catch(e){ return null; }
+}
+const idbGet=k=>idbOp('readonly', st=>st.get(k));
+const idbSet=(k,v)=>idbOp('readwrite', st=>st.put(v,k));
+const idbDel=k=>idbOp('readwrite', st=>st.delete(k));
+const idbTem=async k=>(await idbOp('readonly', st=>st.getKey(k)))!==null;
+function registrarAbrevs(data){
+  /* Guarda as abreviações reais do arquivo (links do Open Bible) e as aceita como apelidos de livro */
+  const abrevs=data.map(b=>b && typeof b.abbrev==='string' ? b.abbrev : '');
+  if(abrevs.length!==66 || abrevs.some(a=>!a)) return;
+  abrevs.forEach((a,i)=>{ const k=normLivro(a); if(k && !LIVROS_MAP[k]) LIVROS_MAP[k]=LIVROS_LISTA[i]; });
+  const c=getCfg();
+  if(JSON.stringify(c.abrevJSON||[])!==JSON.stringify(abrevs)){ c.abrevJSON=abrevs; setCfg(c); }
+}
+function carregarBiblia(cod){
+  if(BIBLIAS_MEM[cod]) return Promise.resolve(BIBLIAS_MEM[cod]);
+  if(BIBLIAS_PROM[cod]) return BIBLIAS_PROM[cod];
+  BIBLIAS_PROM[cod]=(async()=>{
+    try{
+      let data=await idbGet('bible:'+cod);
+      if(!Array.isArray(data)){
+        const r=await fetch(RAW_JSON+cod+'.json');
+        if(!r.ok) throw new Error('Não foi possível baixar esta versão ('+r.status+').');
+        data=JSON.parse((await r.text()).replace(/^\uFEFF/,''));
+        if(!Array.isArray(data) || data.length<60) throw new Error('Arquivo da versão em formato inesperado.');
+        idbSet('bible:'+cod, data);
+      }
+      BIBLIAS_MEM[cod]=data;
+      registrarAbrevs(data);
+      return data;
+    } finally { delete BIBLIAS_PROM[cod]; }
+  })();
+  return BIBLIAS_PROM[cod];
+}
+/* Devolve [{n,t}] com os versículos da referência, ou null se não existir nessa versão */
+async function textoVersiculo(r, cod){
+  const data=await carregarBiblia(cod);
+  const livro=data[indiceLivro(r.livro)];
+  const cap=livro && Array.isArray(livro.chapters) ? livro.chapters[r.cap-1] : null;
+  if(!Array.isArray(cap) || !r.ini) return null;
+  const vs=[];
+  for(let n=r.ini; n<=(r.fim||r.ini); n++){ if(typeof cap[n-1]==='string') vs.push({n, t:cap[n-1].trim()}); }
+  return vs.length ? vs : null;
+}
+function versHtml(vs){
+  return vs.length===1 ? escapeHtml(vs[0].t) : vs.map(v=>'<sup>'+v.n+'</sup> '+escapeHtml(v.t)).join(' ');
+}
+function modoTexto(){ const m=getCfg().textoModo; return (m==='inline'||m==='off') ? m : 'popup'; }
+function versaoTexto(){ const v=getCfg().textoVersao; return catalogoPT().some(x=>x[0]===v) ? v : 'pt_nvi'; }
+function opcoesVersaoTexto(){
+  const ef=versaoTexto();
+  return catalogoPT().map(([c,n])=>`<option value="${c}" ${ef===c?'selected':''}>${n}</option>`).join('');
+}
+
+/* Reconhece "Livro 3:16" e "Liv 3:16-18" dentro de textos livres */
+const REF_RE=/((?:[1-3]\s?[ºo°]?\s?)?[A-Za-zÀ-ÿ]+(?:\s+(?:de|do|da|dos|das)\s+[A-Za-zÀ-ÿ]+)?)\.?\s*(\d{1,3})\s*:\s*(\d{1,3})(?:\s*[-–—]\s*(\d{1,3}))?/g;
+function textoComRefs(txt){
+  const s=String(txt||''), modo=modoTexto();
+  if(modo==='off') return escapeHtml(s);
+  let out='', ultimo=0;
+  for(const m of s.matchAll(REF_RE)){
+    let ini=m.index, trecho=m[0], r=parseRef(trecho);
+    if(!r){
+      /* "Livros de Jo 3:16": tenta sem as primeiras palavras */
+      const pal=trecho.split(/\s+/);
+      for(let k=1;k<=Math.min(3,pal.length-1) && !r;k++){
+        const cand=pal.slice(k).join(' ');
+        const r2=parseRef(cand);
+        if(r2){ r=r2; ini=m.index+trecho.length-cand.length; trecho=cand; }
+      }
+    }
+    if(!r || !r.ini) continue;
+    out+=escapeHtml(s.slice(ultimo,ini));
+    out+='<span class="ref" role="button" tabindex="0" data-ref="'+escapeAttr(r.texto)+'">'+escapeHtml(trecho)+'</span>';
+    if(modo==='inline') out+=' <span class="ref-inline" data-ref-inline="'+escapeAttr(r.texto)+'">…</span>';
+    ultimo=ini+trecho.length;
+  }
+  return out+escapeHtml(s.slice(ultimo));
+}
+/* Bloco com o texto do versículo logo abaixo do texto-base / versículo de apoio */
+function blocoVerso(ref){
+  if(modoTexto()==='off') return '';
+  const r=refEstruturada(ref);
+  if(!r || !r.ini) return '';
+  return '<div class="m-vtexto" data-ref-block="'+escapeAttr(r.texto)+'">Carregando versículo…</div>';
+}
+async function hidratarVersiculos(raiz){
+  if(!raiz || modoTexto()==='off') return;
+  const els=[...raiz.querySelectorAll('[data-ref-block],[data-ref-inline]')];
+  if(!els.length) return;
+  const cod=versaoTexto(), sig=siglaVersao(cod);
+  const bloco=el=>el.hasAttribute('data-ref-block');
+  try{ await carregarBiblia(cod); }
+  catch(err){
+    els.forEach(el=>{ el.innerHTML = bloco(el) ? '<span class="m-vfalha">Texto do versículo indisponível (sem internet?). Em Configurações você pode baixar a versão para usar offline.</span>' : ''; });
+    return;
+  }
+  for(const el of els){
+    const r=parseRef(el.getAttribute('data-ref-block')||el.getAttribute('data-ref-inline'));
+    const vs=r ? await textoVersiculo(r,cod) : null;
+    if(!vs){ el.innerHTML = bloco(el) ? '<span class="m-vfalha">Versículo não encontrado nesta versão.</span>' : ''; continue; }
+    el.innerHTML = bloco(el) ? versHtml(vs)+' <span class="m-vsig">'+sig+'</span>' : '“'+versHtml(vs)+'”';
+  }
+}
+let VP_TOKEN=0;
+function abrirPopupVerso(refTexto){
+  const r=parseRef(refTexto); if(!r) return;
+  const cod=versaoTexto();
+  let el=document.getElementById('verse-pop');
+  if(!el){ el=document.createElement('div'); el.id='verse-pop'; el.className='verse-pop no-print'; document.body.appendChild(el); }
+  const meu=++VP_TOKEN;
+  el.innerHTML='<div class="vp-head"><strong>'+escapeHtml(r.texto)+'</strong><span class="vp-ver">'+siglaVersao(cod)+'</span><button type="button" class="vp-x" aria-label="Fechar">✕</button></div><div class="vp-body">Carregando…</div>';
+  el.querySelector('.vp-x').addEventListener('click', ()=>el.remove());
+  const corpo=el.querySelector('.vp-body');
+  textoVersiculo(r,cod)
+    .then(vs=>{ if(meu===VP_TOKEN) corpo.innerHTML = vs ? versHtml(vs) : 'Versículo não encontrado nesta versão.'; })
+    .catch(()=>{ if(meu===VP_TOKEN) corpo.textContent='Não foi possível carregar o texto. Verifique a internet ou baixe a versão em Configurações.'; });
+}
+function bindPreviasVerso(){
+  if(modoTexto()==='off') return;
+  document.querySelectorAll('#ed-base, .ponto-versiculo').forEach(inp=>{
+    const campo=inp.closest('.field'), prev=campo && campo.querySelector('.vprev');
+    if(!prev) return;
+    let timer;
+    const atualizar=()=>{
+      clearTimeout(timer);
+      timer=setTimeout(async()=>{
+        const r=refEstruturada(inp.value);
+        if(!r || !r.ini){ prev.innerHTML=''; return; }
+        const meu=(inp._tok=(inp._tok||0)+1);
+        prev.textContent='Carregando…';
+        try{
+          const cod=versaoTexto(), vs=await textoVersiculo(r,cod);
+          if(meu!==inp._tok) return;
+          prev.innerHTML = vs ? '<strong>'+escapeHtml(r.texto)+' ('+siglaVersao(cod)+')</strong> '+versHtml(vs) : 'Versículo não encontrado nesta versão.';
+        }catch(err){ if(meu===inp._tok) prev.textContent='Texto indisponível (sem internet?).'; }
+      },400);
+    };
+    inp.addEventListener('input',atualizar);
+    atualizar();
+  });
+}
+async function atualizarStatusTexto(){
+  const el=document.getElementById('texto-status'); if(!el) return;
+  const tem=await idbTem('bible:'+versaoTexto());
+  el.textContent = tem ? 'Baixada neste aparelho ✔ (funciona sem internet)' : 'Ainda não baixada: será baixada no primeiro uso (cerca de 4 MB).';
+}
+
 /* Texto enviado à busca: padronizado como "Livro capítulo:versículo" quando possível; senão, vai como foi digitado */
 function refParaBusca(ref){
   const t=String(ref||'').trim();
@@ -398,6 +642,7 @@ function esbocoVazio(){
 }
 
 function render(){
+  const vp=document.getElementById('verse-pop'); if(vp) vp.remove();
   const app=document.getElementById('app');
   app.innerHTML = viewApp();
   bindApp();
@@ -474,7 +719,7 @@ function viewEditor(){
       <div class="card">
         <div class="field"><label>Título da pregação</label><input type="text" id="ed-titulo" required value="${e.titulo||''}" placeholder="Ex: A fé que vence o mundo"></div>
         <div class="row2">
-          <div class="field"><label>Texto-base</label><div class="inline-row"><input type="text" id="ed-base" value="${e.textoBase||''}" placeholder="Ex: João 3:16"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div></div>
+          <div class="field"><label>Texto-base</label><div class="inline-row"><input type="text" id="ed-base" value="${e.textoBase||''}" placeholder="Ex: João 3:16"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div><div class="vprev"></div></div>
           <div class="field"><label>Tema / assunto</label><input type="text" id="ed-tema" value="${e.tema||''}" placeholder="Ex: Fé, Vitória"></div>
         </div>
         <div class="field" style="max-width:220px;"><label>Data</label><input type="date" id="ed-data" value="${e.data||''}"></div>
@@ -498,7 +743,7 @@ function viewEditor(){
                 ${e.pontos.length>1?`<button type="button" class="remove-x" data-remover-ponto="${p.id}">✕</button>`:''}
               </div>
               <div class="field"><label>Título do ponto</label><input type="text" class="ponto-titulo" value="${p.titulo||''}" placeholder="Ex: A fé nasce da Palavra"></div>
-              <div class="field"><label>Versículo de apoio (opcional)</label><div class="inline-row"><input type="text" class="ponto-versiculo" value="${p.versiculo||''}" placeholder="Ex: Romanos 10:17"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div></div>
+              <div class="field"><label>Versículo de apoio (opcional)</label><div class="inline-row"><input type="text" class="ponto-versiculo" value="${p.versiculo||''}" placeholder="Ex: Romanos 10:17"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div><div class="vprev"></div></div>
               <div class="field" style="margin-bottom:0;"><label>Explicação / desenvolvimento</label><textarea class="ponto-texto" placeholder="Desenvolva esse ponto...">${p.texto||''}</textarea></div>
               <div class="field" style="margin:14px 0 0;"><label>Aplicação prática deste ponto</label><textarea class="ponto-aplicacao" placeholder="O que a igreja deve fazer com este ponto...">${p.aplicacao||''}</textarea></div>
             </div>`).join('')}
@@ -557,7 +802,7 @@ function viewConfig(){
         <button class="btn" id="btn-compartilhar" style="width:auto; flex:1 1 100%;">Compartilhar todos os esboços</button>
         <button class="btn secondary" id="btn-exportar" style="width:auto; flex:1;">Exportar dados</button>
         <button class="btn secondary" id="btn-importar" style="width:auto; flex:1;">Importar dados</button>
-        <input type="file" id="input-importar" accept=".json,application/json" style="display:none;">
+        <input type="file" id="input-importar" accept=".json,.txt,application/json,text/plain" style="display:none;">
       </div>
     </div>
     <div class="card" style="max-width:420px;">
@@ -587,12 +832,31 @@ function viewConfig(){
     </div>
     <div class="card" style="max-width:420px;">
       <h3 style="font-size:16px;">Bíblia online</h3>
-      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Escolha o site e a versão usados quando você abre um versículo.</div>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">Escolha o site e a versão usados quando você abre um versículo (🔗).</div>
       <div class="field"><label>Site de pesquisa</label>
-        <select id="cfg-site"><option value="biblegateway" ${siteBusca()==='biblegateway'?'selected':''}>BibleGateway</option><option value="bibliaonline" ${siteBusca()==='bibliaonline'?'selected':''}>Bíblia Online (bibliaonline.com.br)</option></select>
+        <select id="cfg-site"><option value="biblegateway" ${siteBusca()==='biblegateway'?'selected':''}>BibleGateway</option><option value="bibliaonline" ${siteBusca()==='bibliaonline'?'selected':''}>Bíblia Online (bibliaonline.com.br)</option><option value="openbible" ${siteBusca()==='openbible'?'selected':''}>Open Bible (thiagobodruk.github.io/open-bible)</option></select>
       </div>
       <div class="field" style="margin-bottom:0;"><label>Versão</label>
         <select id="cfg-versao">${opcoesVersao()}</select>
+      </div>
+    </div>
+    <div class="card" style="max-width:420px;">
+      <h3 style="font-size:16px;">Texto dos versículos no esboço</h3>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">O app reconhece versículos escritos como <b>João 3:16</b> ou <b>Jo 3:16</b> e mostra o texto, usando os arquivos do projeto Open Bible. O texto-base e o versículo de cada ponto mostram o texto logo abaixo.</div>
+      <div class="field"><label>Versículos escritos no corpo do esboço</label>
+        <select id="cfg-texto-modo">
+          <option value="popup" ${modoTexto()==='popup'?'selected':''}>Destacar e abrir um popup ao tocar</option>
+          <option value="inline" ${modoTexto()==='inline'?'selected':''}>Mostrar o texto dentro do esboço (sai na impressão)</option>
+          <option value="off" ${modoTexto()==='off'?'selected':''}>Desligado</option>
+        </select>
+      </div>
+      <div class="field"><label>Versão do texto</label>
+        <select id="cfg-texto-versao">${opcoesVersaoTexto()}</select>
+      </div>
+      <div class="sub" id="texto-status" style="color:var(--ink-soft); font-size:12.5px; margin-bottom:10px;"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn secondary small" id="btn-baixar-texto">Baixar para usar sem internet</button>
+        <button type="button" class="btn ghost small" id="btn-remover-texto">Remover download</button>
       </div>
     </div>
     <div class="card" style="max-width:420px;">
@@ -639,7 +903,7 @@ function bindPage(){
       if(esb) compartilharEsbocos([esb], 'esboco-'+slugArquivo(esb.titulo)+'.json', esb.titulo||'Esboço');
     }));
     document.getElementById('btn-importar-lista').addEventListener('click', ()=>{
-      const i=document.createElement('input'); i.type='file'; i.accept='.json,application/json';
+      const i=document.createElement('input'); i.type='file'; i.accept='.json,.txt,application/json,text/plain';
       i.addEventListener('change', importarDados); i.click();
     });
     document.querySelectorAll('[data-excluir]').forEach(b=>b.addEventListener('click', ()=>{
@@ -661,6 +925,7 @@ function bindPage(){
     }));
     document.getElementById('btn-ia-editor').addEventListener('click', ()=>{ sincronizarEditorComDOM(); abrirIA(true); });
     document.querySelectorAll('[data-abrir-verso]').forEach(b=>b.addEventListener('click', ()=>abrirVersiculo(b.previousElementSibling.value)));
+    bindPreviasVerso();
     document.querySelectorAll('[data-abrir-link]').forEach(b=>b.addEventListener('click', ()=>{ const u=normalizeUrl(b.previousElementSibling.value); if(u) window.open(u,'_blank','noopener'); }));
     document.getElementById('btn-add-link').addEventListener('click', ()=>{ sincronizarEditorComDOM(); state.editor.links.push({id:uid(), titulo:'', url:''}); render(); });
     document.querySelectorAll('[data-remover-link]').forEach(b=>b.addEventListener('click', ()=>{ sincronizarEditorComDOM(); state.editor.links = state.editor.links.filter(l=>l.id!==b.dataset.removerLink); render(); }));
@@ -732,7 +997,27 @@ function bindPage(){
       const c=getCfg(); c.site=e.target.value; setCfg(c);
       document.getElementById('cfg-versao').innerHTML=opcoesVersao();
     });
-    document.getElementById('cfg-versao').addEventListener('change', e=>{ const c=getCfg(); c.versao=e.target.value; setCfg(c); });
+    document.getElementById('cfg-versao').addEventListener('change', e=>{
+      const c=getCfg();
+      if(siteBusca()==='openbible') c.versaoOB=e.target.value; else c.versao=e.target.value;
+      setCfg(c);
+    });
+    document.getElementById('cfg-texto-modo').addEventListener('change', e=>{ const c=getCfg(); c.textoModo=e.target.value; setCfg(c); });
+    document.getElementById('cfg-texto-versao').addEventListener('change', e=>{ const c=getCfg(); c.textoVersao=e.target.value; setCfg(c); atualizarStatusTexto(); });
+    document.getElementById('btn-baixar-texto').addEventListener('click', async ()=>{
+      const st=document.getElementById('texto-status'); st.textContent='Baixando…';
+      try{ await carregarBiblia(versaoTexto()); }catch(err){ st.textContent='Não foi possível baixar. Verifique a internet e tente de novo.'; return; }
+      atualizarStatusTexto();
+    });
+    document.getElementById('btn-remover-texto').addEventListener('click', async ()=>{
+      const cod=versaoTexto(); delete BIBLIAS_MEM[cod]; await idbDel('bible:'+cod); atualizarStatusTexto();
+    });
+    atualizarStatusTexto();
+    atualizarCatalogoPT().then(mudou=>{
+      if(!mudou) return;
+      const v=document.getElementById('cfg-versao'); if(v) v.innerHTML=opcoesVersao();
+      const t=document.getElementById('cfg-texto-versao'); if(t) t.innerHTML=opcoesVersaoTexto();
+    });
     const bs=document.getElementById('btn-salvar-chave');
     if(bs) bs.addEventListener('click', ()=>{ const k=document.getElementById('cfg-apikey').value.trim(); if(!k) return; const c=getCfg(); c.apiKey=k; setCfg(c); render(); });
     const br=document.getElementById('btn-remover-chave');
@@ -790,23 +1075,23 @@ function modalVisualizar(e){
       <div class="manuscrito">
         ${e.tema?`<div class="m-tema">${e.tema}</div>`:''}
         <h1 class="s-titulo">${e.titulo||'(sem título)'}</h1>
-        ${e.textoBase?`<div class="m-base s-base">${linkVerso(e.textoBase)}</div>`:''}
+        ${e.textoBase?`<div class="m-base s-base">${linkVerso(e.textoBase)}</div>${blocoVerso(e.textoBase)}`:''}
         <div class="m-data">${e.data?fmtDataCurta(e.data):''}</div>
 
-        ${e.introducao?`<h3 class="m-sec s-secao">Introdução</h3><p class="s-intro">${escapeHtml(e.introducao)}</p>`:''}
+        ${e.introducao?`<h3 class="m-sec s-secao">Introdução</h3><p class="s-intro">${textoComRefs(e.introducao)}</p>`:''}
 
         ${pontos.length?`<h3 class="m-sec s-secao">Pontos principais</h3>
         ${pontos.map((p,idx)=>`
           <div class="m-ponto">
             <div class="m-ponto-titulo s-ptitulo">${idx+1}. ${escapeHtml(p.titulo||'')}</div>
-            ${p.versiculo?`<div class="m-ponto-vers s-vers">${linkVerso(p.versiculo)}</div>`:''}
-            ${p.texto?`<p class="s-ptexto">${escapeHtml(p.texto)}</p>`:''}
-            ${p.aplicacao?`<div class="m-ponto-aplic-label s-secao">Aplicação prática</div><p class="s-aplic">${escapeHtml(p.aplicacao)}</p>`:''}
+            ${p.versiculo?`<div class="m-ponto-vers s-vers">${linkVerso(p.versiculo)}</div>${blocoVerso(p.versiculo)}`:''}
+            ${p.texto?`<p class="s-ptexto">${textoComRefs(p.texto)}</p>`:''}
+            ${p.aplicacao?`<div class="m-ponto-aplic-label s-secao">Aplicação prática</div><p class="s-aplic">${textoComRefs(p.aplicacao)}</p>`:''}
           </div>`).join('')}`:''}
 
-        ${e.conclusao?`<h3 class="m-sec s-secao">Conclusão</h3><p class="s-concl">${escapeHtml(e.conclusao)}</p>`:''}
-        ${e.aplicacao?`<h3 class="m-sec s-secao">Aplicação prática</h3><p class="s-aplic">${escapeHtml(e.aplicacao)}</p>`:''}
-        ${e.observacoes?`<h3 class="m-sec s-secao">Observações</h3><p class="s-obs">${escapeHtml(e.observacoes)}</p>`:''}
+        ${e.conclusao?`<h3 class="m-sec s-secao">Conclusão</h3><p class="s-concl">${textoComRefs(e.conclusao)}</p>`:''}
+        ${e.aplicacao?`<h3 class="m-sec s-secao">Aplicação prática</h3><p class="s-aplic">${textoComRefs(e.aplicacao)}</p>`:''}
+        ${e.observacoes?`<h3 class="m-sec s-secao">Observações</h3><p class="s-obs">${textoComRefs(e.observacoes)}</p>`:''}
         ${(e.links||[]).length?`<h3 class="m-sec">Links de referência</h3>${e.links.map(l=>`<p style="margin:0 0 6px;"><a class="verse" href="${escapeAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.titulo||l.url)}</a></p>`).join('')}`:''}
       </div>
       <div class="modal-actions no-print">
@@ -825,6 +1110,7 @@ function bindModal(){
   if(state.modal.type==='visualizar'){
     document.getElementById('btn-fechar-visualizar').addEventListener('click', ()=>{ state.modal=null; render(); });
     document.getElementById('btn-imprimir-visualizar').addEventListener('click', ()=>window.print());
+    hidratarVersiculos(document.querySelector('.manuscrito'));
   }
   if(state.modal.type==='ia'){
     document.getElementById('ia-pedido').addEventListener('input', e=>{ state.iaPedido=e.target.value; });
@@ -925,9 +1211,9 @@ function slugArquivo(t){
   const x=String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
   return x||'sem-titulo';
 }
-function criarArquivoBackup(lista, nome){
+function criarArquivoBackup(lista, nome, tipo){
   const backup = { tipo:'esboco-pregacao-backup', versao:1, exportadoEm:new Date().toISOString(), esbocos: lista };
-  return new File([JSON.stringify(backup,null,2)], nome, {type:'application/json'});
+  return new File([JSON.stringify(backup,null,2)], nome, {type: tipo||'application/json'});
 }
 function baixarArquivo(file){
   const url = URL.createObjectURL(file);
@@ -936,20 +1222,25 @@ function baixarArquivo(file){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
-/* Abre o menu "compartilhar" do aparelho (WhatsApp, e-mail, Drive...); sem suporte, baixa o arquivo */
+/* Abre o menu "compartilhar" do aparelho (WhatsApp, e-mail, Drive...); sem suporte, baixa o arquivo.
+   O Chrome/Android só deixa compartilhar arquivos de tipos permitidos (texto, imagem, PDF...), por isso o
+   backup vai como ".txt" (o conteúdo continua sendo o mesmo JSON e o app importa normalmente). */
 async function compartilharEsbocos(lista, nome, titulo){
   if(!lista.length){ alert('Não há esboços para compartilhar.'); return; }
-  const file = criarArquivoBackup(lista, nome);
-  try{
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title:titulo});
-      return;
+  const arquivoTxt = criarArquivoBackup(lista, nome.replace(/\.json$/i,'.txt'), 'text/plain');
+  let motivo='';
+  if(!navigator.share) motivo='O navegador não oferece o menu de compartilhar. Isso acontece quando o aplicativo é aberto como arquivo do aparelho (e não por um endereço https://) ou em navegadores sem esse recurso.';
+  else if(!navigator.canShare) motivo='Este navegador não permite compartilhar arquivos.';
+  else if(!navigator.canShare({files:[arquivoTxt]})) motivo='O navegador recusou compartilhar este tipo de arquivo.';
+  else{
+    try{ await navigator.share({files:[arquivoTxt], title:titulo}); return; }
+    catch(err){
+      if(err && err.name==='AbortError') return;
+      motivo='O navegador não conseguiu abrir o menu de compartilhar ('+((err&&err.name)||'erro')+(err&&err.message?': '+err.message:'')+').';
     }
-  }catch(err){
-    if(err && err.name==='AbortError') return;
   }
-  baixarArquivo(file);
-  alert('Este navegador não abre o menu de compartilhar. O arquivo foi baixado: envie-o por WhatsApp, e-mail ou pendrive e importe no outro aparelho.');
+  baixarArquivo(criarArquivoBackup(lista, nome));
+  alert(motivo+'\n\nBaixei o arquivo no aparelho: envie-o por WhatsApp, e-mail ou pendrive e use "Importar" no outro aparelho.');
 }
 function exportarDados(){
   baixarArquivo(criarArquivoBackup(DB.getEsbocos(), 'backup-esbocos-pregacao-'+new Date().toISOString().slice(0,10)+'.json'));
@@ -1014,6 +1305,16 @@ function apagarTudo(){
   render();
 }
 
+document.addEventListener('click', ev=>{
+  const ref=ev.target.closest && ev.target.closest('.ref');
+  if(ref){ ev.preventDefault(); abrirPopupVerso(ref.dataset.ref); return; }
+  const pop=document.getElementById('verse-pop');
+  if(pop && !ev.target.closest('#verse-pop')) pop.remove();
+});
+document.addEventListener('keydown', ev=>{
+  if(ev.key==='Enter' && ev.target.classList && ev.target.classList.contains('ref')){ ev.preventDefault(); abrirPopupVerso(ev.target.dataset.ref); }
+  if(ev.key==='Escape'){ const pop=document.getElementById('verse-pop'); if(pop) pop.remove(); }
+});
 aplicarVisualizacao();
 render();
 </script>
