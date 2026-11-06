@@ -128,6 +128,9 @@
   .manuscrito .m-ponto .s-vers{color:var(--s-vers-c,var(--gold)); font-weight:var(--s-vers-w,400); font-style:var(--s-vers-i,italic);}
   .manuscrito .s-vers a.verse{color:var(--s-vers-c,var(--primary));}
   .manuscrito .s-ptexto{color:var(--s-ptexto-c,inherit); font-weight:var(--s-ptexto-w,inherit); font-style:var(--s-ptexto-i,normal);}
+  .manuscrito .s-perg{color:var(--s-perg-c,inherit); font-weight:var(--s-perg-w,400); font-style:var(--s-perg-i,italic);}
+  .manuscrito .m-perg{margin:8px 0; padding:6px 10px; border-left:3px solid var(--primary-soft); line-height:1.55; white-space:pre-wrap;}
+  .manuscrito .m-perg-rot{font-style:normal; font-weight:700; font-size:.8em; text-transform:uppercase; letter-spacing:.08em; color:var(--s-secao-c,var(--primary)); margin-right:4px;}
   .manuscrito .s-aplic{color:var(--s-aplic-c,inherit); font-weight:var(--s-aplic-w,inherit); font-style:var(--s-aplic-i,normal);}
   .manuscrito .s-concl{color:var(--s-concl-c,inherit); font-weight:var(--s-concl-w,inherit); font-style:var(--s-concl-i,normal);}
   .manuscrito .s-obs{color:var(--s-obs-c,inherit); font-weight:var(--s-obs-w,inherit); font-style:var(--s-obs-i,normal);}
@@ -196,6 +199,7 @@ const ESTILOS={
   vers:{n:'Versículo de apoio', c:'#3B3486', b:false, i:true},
   ptexto:{n:'Desenvolvimento dos pontos', c:null, b:false, i:false},
   aplic:{n:'Aplicação prática', c:null, b:false, i:false},
+  perg:{n:'Perguntas', c:null, b:false, i:true},
   concl:{n:'Conclusão', c:null, b:false, i:false},
   obs:{n:'Observações', c:null, b:false, i:false}
 };
@@ -638,7 +642,7 @@ let state = {
 
 function esbocoVazio(){
   return { id:null, titulo:'', tema:'', textoBase:'', data:'', introducao:'',
-    pontos:[{id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:''}],
+    pontos:[{id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''}],
     conclusao:'', aplicacao:'', observacoes:'', links:[], criadoEm:null };
 }
 
@@ -745,8 +749,11 @@ function viewEditor(){
               </div>
               <div class="field"><label>Título do ponto</label><input type="text" class="ponto-titulo" value="${p.titulo||''}" placeholder="Ex: A fé nasce da Palavra"></div>
               <div class="field"><label>Versículo de apoio (opcional)</label><div class="inline-row"><input type="text" class="ponto-versiculo" value="${p.versiculo||''}" placeholder="Ex: Romanos 10:17"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div><div class="vprev"></div></div>
+              <div class="field"><label>Pergunta</label><textarea class="ponto-perg-antes" rows="2" placeholder="Pergunta para a igreja, antes do desenvolvimento...">${p.pergAntes||''}</textarea></div>
               <div class="field" style="margin-bottom:0;"><label>Explicação / desenvolvimento</label><textarea class="ponto-texto" placeholder="Desenvolva esse ponto...">${p.texto||''}</textarea></div>
               <div class="field" style="margin:14px 0 0;"><label>Aplicação prática deste ponto</label><textarea class="ponto-aplicacao" placeholder="O que a igreja deve fazer com este ponto...">${p.aplicacao||''}</textarea></div>
+              <div class="field" style="margin:14px 0 0;"><label>Pergunta</label><textarea class="ponto-perg-depois1" rows="2" placeholder="Pergunta para a igreja, depois da aplicação prática...">${p.pergDepois1||''}</textarea></div>
+              <div class="field" style="margin:14px 0 0;"><label>Pergunta</label><textarea class="ponto-perg-depois2" rows="2" placeholder="Outra pergunta, depois da aplicação prática...">${p.pergDepois2||''}</textarea></div>
             </div>`).join('')}
         </div>
       </div>
@@ -872,6 +879,7 @@ function viewConfig(){
       </div>
       <button class="btn danger" id="btn-apagar-tudo" style="width:auto;">Apagar todos os dados</button>
     </div>
+    <div class="sub" style="max-width:420px; text-align:center; color:var(--ink-soft); font-size:12px; margin:6px 0 20px;">Versão do arquivo: perguntas nos pontos (v. 2026-11-06)</div>
   `;
 }
 
@@ -916,7 +924,7 @@ function bindPage(){
   if(state.tab==='editor'){
     document.getElementById('btn-add-ponto').addEventListener('click', ()=>{
       sincronizarEditorComDOM();
-      state.editor.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:''});
+      state.editor.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''});
       render();
     });
     document.querySelectorAll('[data-remover-ponto]').forEach(b=>b.addEventListener('click', ()=>{
@@ -1046,6 +1054,7 @@ function sincronizarEditorComDOM(){
     p.versiculo = card.querySelector('.ponto-versiculo').value;
     p.texto = card.querySelector('.ponto-texto').value;
     const apEl = card.querySelector('.ponto-aplicacao'); if(apEl) p.aplicacao = apEl.value;
+    [['.ponto-perg-antes','pergAntes'],['.ponto-perg-depois1','pergDepois1'],['.ponto-perg-depois2','pergDepois2']].forEach(([sel,k])=>{ const el=card.querySelector(sel); if(el) p[k]=el.value; });
   });
   ed.links = ed.links||[];
   document.querySelectorAll('.link-card').forEach(card=>{
@@ -1069,7 +1078,7 @@ function modalHTML(){
   return '';
 }
 function modalVisualizar(e){
-  const pontos = e.pontos.filter(p=>p.titulo||p.texto||p.aplicacao);
+  const pontos = e.pontos.filter(p=>p.titulo||p.texto||p.aplicacao||p.pergAntes||p.pergDepois1||p.pergDepois2);
   return `
   <div class="overlay overlay-full" id="overlay">
     <div class="modal modal-full">
@@ -1086,8 +1095,11 @@ function modalVisualizar(e){
           <div class="m-ponto">
             <div class="m-ponto-titulo s-ptitulo">${idx+1}. ${escapeHtml(p.titulo||'')}</div>
             ${p.versiculo?`<div class="m-ponto-vers s-vers">${linkVerso(p.versiculo)}</div>${blocoVerso(p.versiculo)}`:''}
+            ${p.pergAntes?`<div class="m-perg s-perg"><span class="m-perg-rot">Pergunta</span> ${textoComRefs(p.pergAntes)}</div>`:''}
             ${p.texto?`<p class="s-ptexto">${textoComRefs(p.texto)}</p>`:''}
             ${p.aplicacao?`<div class="m-ponto-aplic-label s-secao">Aplicação prática</div><p class="s-aplic">${textoComRefs(p.aplicacao)}</p>`:''}
+            ${p.pergDepois1?`<div class="m-perg s-perg"><span class="m-perg-rot">Pergunta</span> ${textoComRefs(p.pergDepois1)}</div>`:''}
+            ${p.pergDepois2?`<div class="m-perg s-perg"><span class="m-perg-rot">Pergunta</span> ${textoComRefs(p.pergDepois2)}</div>`:''}
           </div>`).join('')}`:''}
 
         ${e.conclusao?`<h3 class="m-sec s-secao">Conclusão</h3><p class="s-concl">${textoComRefs(e.conclusao)}</p>`:''}
@@ -1154,9 +1166,9 @@ function modalIA(){
   </div>`;
 }
 function montarPromptIA(pedido, comoJSON){
-  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento e aplicação prática do ponto) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
+  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento, aplicação prática do ponto, uma pergunta para depois do versículo de apoio e duas perguntas para depois da aplicação prática) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
   if(comoJSON){
-    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":""}],"conclusao":""}';
+    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":"","pergAntes":"","pergDepois1":"","pergDepois2":""}],"conclusao":""}';
   }
   return t;
 }
@@ -1194,8 +1206,8 @@ async function gerarComIA(){
     base.introducao = String(r.introducao||'');
     base.conclusao = String(r.conclusao||'');
     base.aplicacao = String(r.aplicacao||'');
-    base.pontos = (Array.isArray(r.pontos)?r.pontos:[]).map(p=>({id:uid(), titulo:String(p.titulo||''), versiculo:String(p.versiculo||''), texto:String(p.texto||''), aplicacao:String(p.aplicacao||'')}));
-    if(base.pontos.length===0) base.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:''});
+    base.pontos = (Array.isArray(r.pontos)?r.pontos:[]).map(p=>({id:uid(), titulo:String(p.titulo||''), versiculo:String(p.versiculo||''), texto:String(p.texto||''), aplicacao:String(p.aplicacao||''), pergAntes:String(p.pergAntes||''), pergDepois1:String(p.pergDepois1||''), pergDepois2:String(p.pergDepois2||'')}));
+    if(base.pontos.length===0) base.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''});
     base.links = base.links||[];
     state.editor = base; state.editorErro='';
     state.iaLoading=false; state.modal=null; state.tab='editor';
