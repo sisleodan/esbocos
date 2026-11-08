@@ -123,6 +123,7 @@
   .manuscrito .s-base a.verse{color:var(--s-base-c,var(--primary));}
   .manuscrito h3.m-sec.s-secao{color:var(--s-secao-c,var(--primary)); font-weight:var(--s-secao-w,700); font-style:var(--s-secao-i,normal);}
   .manuscrito .m-ponto-aplic-label{font-size:.8em; text-transform:uppercase; letter-spacing:.08em; margin:10px 0 4px; color:var(--s-secao-c,var(--primary)); font-weight:var(--s-secao-w,700); font-style:var(--s-secao-i,normal);}
+  .manuscrito .s-resumo{color:var(--s-resumo-c,inherit); font-weight:var(--s-resumo-w,inherit); font-style:var(--s-resumo-i,normal);}
   .manuscrito .s-intro{color:var(--s-intro-c,inherit); font-weight:var(--s-intro-w,inherit); font-style:var(--s-intro-i,normal);}
   .manuscrito .s-ptitulo{color:var(--s-ptitulo-c,inherit); font-weight:var(--s-ptitulo-w,700); font-style:var(--s-ptitulo-i,normal);}
   .manuscrito .m-ponto .s-vers{color:var(--s-vers-c,var(--gold)); font-weight:var(--s-vers-w,400); font-style:var(--s-vers-i,italic);}
@@ -194,6 +195,7 @@ const ESTILOS={
   titulo:{n:'Título da pregação', c:null, b:true, i:false},
   base:{n:'Texto-base', c:'#6B6052', b:false, i:true},
   secao:{n:'Títulos das seções', c:'#3B3486', b:true, i:false},
+  resumo:{n:'Resumo do conteúdo', c:null, b:false, i:false},
   intro:{n:'Introdução', c:null, b:false, i:false},
   ptitulo:{n:'Título dos pontos', c:null, b:true, i:false},
   vers:{n:'Versículo de apoio', c:'#3B3486', b:false, i:true},
@@ -641,7 +643,7 @@ let state = {
 };
 
 function esbocoVazio(){
-  return { id:null, titulo:'', tema:'', textoBase:'', data:'', introducao:'',
+  return { id:null, titulo:'', tema:'', textoBase:'', data:'', resumo:'', introducao:'',
     pontos:[{id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''}],
     conclusao:'', aplicacao:'', observacoes:'', links:[], criadoEm:null };
 }
@@ -728,6 +730,11 @@ function viewEditor(){
           <div class="field"><label>Tema / assunto</label><input type="text" id="ed-tema" value="${e.tema||''}" placeholder="Ex: Fé, Vitória"></div>
         </div>
         <div class="field" style="max-width:220px;"><label>Data</label><input type="date" id="ed-data" value="${e.data||''}"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:16px;">Resumo do conteúdo</h3>
+        <div class="field" style="margin-top:10px;"><textarea id="ed-resumo" placeholder="Resumo do que será abordado nesta pregação...">${e.resumo||''}</textarea></div>
       </div>
 
       <div class="card">
@@ -1042,6 +1049,7 @@ function sincronizarEditorComDOM(){
   if($('ed-base')) ed.textoBase = $('ed-base').value;
   if($('ed-tema')) ed.tema = $('ed-tema').value;
   if($('ed-data')) ed.data = $('ed-data').value;
+  if($('ed-resumo')) ed.resumo = $('ed-resumo').value;
   if($('ed-introducao')) ed.introducao = $('ed-introducao').value;
   if($('ed-conclusao')) ed.conclusao = $('ed-conclusao').value;
   if($('ed-aplicacao')) ed.aplicacao = $('ed-aplicacao').value;
@@ -1088,6 +1096,7 @@ function modalVisualizar(e){
         ${e.textoBase?`<div class="m-base s-base">${linkVerso(e.textoBase)}</div>${blocoVerso(e.textoBase)}`:''}
         <div class="m-data">${e.data?fmtDataCurta(e.data):''}</div>
 
+        ${e.resumo?`<h3 class="m-sec s-secao">Resumo do conteúdo</h3><p class="s-resumo">${textoComRefs(e.resumo)}</p>`:''}
         ${e.introducao?`<h3 class="m-sec s-secao">Introdução</h3><p class="s-intro">${textoComRefs(e.introducao)}</p>`:''}
 
         ${pontos.length?`<h3 class="m-sec s-secao">Pontos principais</h3>
@@ -1166,9 +1175,9 @@ function modalIA(){
   </div>`;
 }
 function montarPromptIA(pedido, comoJSON){
-  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento, aplicação prática do ponto, uma pergunta para depois do versículo de apoio e duas perguntas para depois da aplicação prática) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
+  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), resumo do conteúdo (2 a 3 frases), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento, aplicação prática do ponto, uma pergunta para depois do versículo de apoio e duas perguntas para depois da aplicação prática) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
   if(comoJSON){
-    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":"","pergAntes":"","pergDepois1":"","pergDepois2":""}],"conclusao":""}';
+    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","resumo":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":"","pergAntes":"","pergDepois1":"","pergDepois2":""}],"conclusao":""}';
   }
   return t;
 }
@@ -1203,6 +1212,7 @@ async function gerarComIA(){
     base.titulo = String(r.titulo||'');
     base.tema = String(r.tema||'');
     base.textoBase = String(r.textoBase||'');
+    base.resumo = String(r.resumo||'');
     base.introducao = String(r.introducao||'');
     base.conclusao = String(r.conclusao||'');
     base.aplicacao = String(r.aplicacao||'');
