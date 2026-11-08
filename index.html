@@ -187,9 +187,19 @@
 
   @media print{
     header.topbar, nav.tabs, .no-print{display:none !important;}
-    body{background:#fff;}
+    html, body{height:auto !important; min-height:0 !important; background:#fff;}
+    #app{display:block !important; min-height:0 !important;}
     main{padding:0; max-width:100%;}
-    .manuscrito{border:none; box-shadow:none; padding:0;}
+    .manuscrito{border:none; box-shadow:none; padding:0; max-width:none;}
+    /* Imprimindo a visualização: o popup deixa de ser "fixo" (que repetia a 1ª página em todas as folhas)
+       e vira conteúdo normal da página, que o navegador consegue paginar. */
+    body.imprimindo-esboco #app > main{display:none !important;}
+    body.imprimindo-esboco .overlay{position:static !important; inset:auto !important; display:block !important; background:#fff !important; padding:0 !important; z-index:auto !important; height:auto !important;}
+    body.imprimindo-esboco .modal, body.imprimindo-esboco .modal-full{position:static !important; max-height:none !important; height:auto !important; overflow:visible !important; max-width:none !important; width:auto !important; padding:0 !important; border-radius:0 !important; box-shadow:none !important;}
+    body.imprimindo-esboco .modal-full .manuscrito{padding:0 !important; margin:0 !important;}
+    .manuscrito h3.m-sec, .manuscrito .m-ponto-titulo, .manuscrito .m-ponto-aplic-label{break-after:avoid; page-break-after:avoid;}
+    .manuscrito .m-perg, .manuscrito .m-vtexto{break-inside:avoid; page-break-inside:avoid;}
+    .manuscrito, .manuscrito p{orphans:3; widows:3;}
   }
   @media (min-width:720px){ nav.tabs button{flex:none; padding:12px 20px;} }
 </style>
@@ -689,6 +699,7 @@ function esbocoVazio(){
 }
 
 function render(){
+  document.body.classList.remove('imprimindo-esboco');
   const vp=document.getElementById('verse-pop'); if(vp) vp.remove();
   const ep=document.getElementById('estilo-pop'); if(ep) ep.remove();
   const app=document.getElementById('app');
@@ -762,6 +773,10 @@ function viewEditor(){
   const e = state.editor || esbocoVazio();
   return `
     <div class="page-head"><div><h2>${e.id?'Editar esboço':'Novo esboço'}</h2><div class="sub">Preencha a estrutura da sua pregação</div></div><div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;"><button type="button" class="btn secondary small" id="btn-cores-editor">🎨 Cores</button><button type="button" class="btn secondary small" id="btn-ia-editor">🤖 Buscar com IA</button></div></div>
+    <div class="modal-actions" style="margin:0 0 14px;">
+      <button type="button" class="btn ghost js-cancelar-editor">Cancelar</button>
+      <button type="submit" form="form-editor" class="btn">Salvar esboço</button>
+    </div>
     ${state.editorErro?`<div class="error-msg">${state.editorErro}</div>`:''}
     <form id="form-editor">
       <div class="card">
@@ -837,7 +852,7 @@ function viewEditor(){
       </div>
 
       <div class="modal-actions" style="margin-top:4px;">
-        <button type="button" class="btn ghost" id="btn-cancelar-editor">Cancelar</button>
+        <button type="button" class="btn ghost js-cancelar-editor" id="btn-cancelar-editor">Cancelar</button>
         <button type="submit" class="btn">Salvar esboço</button>
       </div>
     </form>
@@ -988,9 +1003,9 @@ function bindPage(){
     document.querySelectorAll('[data-abrir-link]').forEach(b=>b.addEventListener('click', ()=>{ const u=normalizeUrl(b.previousElementSibling.value); if(u) window.open(u,'_blank','noopener'); }));
     document.getElementById('btn-add-link').addEventListener('click', ()=>{ sincronizarEditorComDOM(); state.editor.links.push({id:uid(), titulo:'', url:''}); render(); });
     document.querySelectorAll('[data-remover-link]').forEach(b=>b.addEventListener('click', ()=>{ sincronizarEditorComDOM(); state.editor.links = state.editor.links.filter(l=>l.id!==b.dataset.removerLink); render(); }));
-    document.getElementById('btn-cancelar-editor').addEventListener('click', ()=>{
+    document.querySelectorAll('.js-cancelar-editor').forEach(b=>b.addEventListener('click', ()=>{
       state.editor=null; state.editorErro=''; state.tab='lista'; render();
-    });
+    }));
     document.getElementById('form-editor').addEventListener('submit', e=>{
       e.preventDefault();
       sincronizarEditorComDOM();
@@ -1126,6 +1141,10 @@ function modalVisualizar(e){
   return `
   <div class="overlay overlay-full" id="overlay">
     <div class="modal modal-full">
+      <div class="modal-actions no-print" style="margin:0 0 12px;">
+        <button class="btn ghost js-fechar-visualizar">Fechar</button>
+        <button class="btn js-imprimir-visualizar">Imprimir</button>
+      </div>
       <div class="manuscrito">
         ${e.tema?`<div class="m-tema">${e.tema}</div>`:''}
         <h1 class="s-titulo">${e.titulo||'(sem título)'}</h1>
@@ -1153,8 +1172,8 @@ function modalVisualizar(e){
         ${(e.links||[]).length?`<h3 class="m-sec">Links de referência</h3>${e.links.map(l=>`<p style="margin:0 0 6px;"><a class="verse" href="${escapeAttr(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.titulo||l.url)}</a></p>`).join('')}`:''}
       </div>
       <div class="modal-actions no-print">
-        <button class="btn ghost" id="btn-fechar-visualizar">Fechar</button>
-        <button class="btn" id="btn-imprimir-visualizar">Imprimir</button>
+        <button class="btn ghost js-fechar-visualizar" id="btn-fechar-visualizar">Fechar</button>
+        <button class="btn js-imprimir-visualizar" id="btn-imprimir-visualizar">Imprimir</button>
       </div>
     </div>
   </div>`;
@@ -1166,8 +1185,8 @@ function bindModal(){
   const overlay=document.getElementById('overlay');
   overlay.addEventListener('click', e=>{ if(e.target.id==='overlay' && !state.iaLoading){ state.modal=null; render(); } });
   if(state.modal.type==='visualizar'){
-    document.getElementById('btn-fechar-visualizar').addEventListener('click', ()=>{ state.modal=null; render(); });
-    document.getElementById('btn-imprimir-visualizar').addEventListener('click', ()=>window.print());
+    document.querySelectorAll('.js-fechar-visualizar').forEach(b=>b.addEventListener('click', ()=>{ state.modal=null; render(); }));
+    document.querySelectorAll('.js-imprimir-visualizar').forEach(b=>b.addEventListener('click', ()=>{ document.body.classList.add('imprimindo-esboco'); window.print(); }));
     hidratarVersiculos(document.querySelector('.manuscrito'));
   }
   if(state.modal.type==='ia'){
@@ -1370,6 +1389,10 @@ document.addEventListener('click', ev=>{
   const pop=document.getElementById('verse-pop');
   if(pop && !ev.target.closest('#verse-pop')) pop.remove();
 });
+window.addEventListener('beforeprint', ()=>{
+  if(document.querySelector('.overlay .manuscrito')) document.body.classList.add('imprimindo-esboco');
+});
+window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-esboco'));
 document.addEventListener('keydown', ev=>{
   if(ev.key==='Enter' && ev.target.classList && ev.target.classList.contains('ref')){ ev.preventDefault(); abrirPopupVerso(ev.target.dataset.ref); }
   if(ev.key==='Escape'){ const pop=document.getElementById('verse-pop'); if(pop) pop.remove(); }
