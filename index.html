@@ -141,6 +141,25 @@
   .est-btn{width:34px; height:34px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--ink); font-size:15px; padding:0; flex:none;}
   .est-btn.on{background:var(--primary); color:#fff; border-color:var(--primary);}
 
+  /* Acesso rápido às cores na tela de edição */
+  .est-atalho{border:1px solid var(--border); background:#fff; border-radius:8px; padding:2px 8px; font-size:14px; line-height:1.4;}
+  .estilo-pop{position:fixed; left:8px; right:8px; bottom:8px; max-width:520px; margin:0 auto; z-index:9998; background:#fff; border:1px solid var(--border); border-left:4px solid var(--primary); border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:10px 14px 12px; max-height:60vh; overflow:auto;}
+  .estilo-pop .ep-head{display:flex; align-items:center; gap:8px; margin-bottom:4px; position:sticky; top:0; background:#fff;}
+  .estilo-pop .ep-head strong{flex:1;}
+  .estilo-pop .ep-x{border:none; background:none; font-size:18px; color:var(--ink-soft); padding:2px 6px;}
+  @media print{ .estilo-pop{display:none !important;} }
+  #ed-titulo{color:var(--s-titulo-c,inherit); font-weight:var(--s-titulo-w,inherit); font-style:var(--s-titulo-i,inherit);}
+  #ed-base{color:var(--s-base-c,inherit); font-weight:var(--s-base-w,inherit); font-style:var(--s-base-i,inherit);}
+  #ed-resumo{color:var(--s-resumo-c,inherit); font-weight:var(--s-resumo-w,inherit); font-style:var(--s-resumo-i,inherit);}
+  #ed-introducao{color:var(--s-intro-c,inherit); font-weight:var(--s-intro-w,inherit); font-style:var(--s-intro-i,inherit);}
+  #ed-conclusao{color:var(--s-concl-c,inherit); font-weight:var(--s-concl-w,inherit); font-style:var(--s-concl-i,inherit);}
+  #ed-observacoes{color:var(--s-obs-c,inherit); font-weight:var(--s-obs-w,inherit); font-style:var(--s-obs-i,inherit);}
+  #ed-aplicacao, .ponto-card .ponto-aplicacao{color:var(--s-aplic-c,inherit); font-weight:var(--s-aplic-w,inherit); font-style:var(--s-aplic-i,inherit);}
+  .ponto-card .ponto-titulo{color:var(--s-ptitulo-c,inherit); font-weight:var(--s-ptitulo-w,inherit); font-style:var(--s-ptitulo-i,inherit);}
+  .ponto-card .ponto-versiculo{color:var(--s-vers-c,inherit); font-weight:var(--s-vers-w,inherit); font-style:var(--s-vers-i,inherit);}
+  .ponto-card .ponto-texto{color:var(--s-ptexto-c,inherit); font-weight:var(--s-ptexto-w,inherit); font-style:var(--s-ptexto-i,inherit);}
+  .ponto-card .ponto-perg-antes, .ponto-card .ponto-perg-depois1, .ponto-card .ponto-perg-depois2{color:var(--s-perg-c,inherit); font-weight:var(--s-perg-w,inherit); font-style:var(--s-perg-i,inherit);}
+
   /* Texto dos versículos */
   .manuscrito .ref{background:#F6EBC8; border-bottom:1px dotted var(--gold); border-radius:3px; padding:0 2px; cursor:pointer;}
   .manuscrito .ref:focus{outline:2px solid var(--primary-soft);}
@@ -232,6 +251,27 @@ function atualizarLinhaEstilo(row){
   row.querySelector('.est-cor').value=e.c;
   row.querySelector('.est-b').classList.toggle('on',e.b);
   row.querySelector('.est-i').classList.toggle('on',e.i);
+}
+function bindLinhasEstilo(raiz){
+  raiz.querySelectorAll('.est-row').forEach(row=>{
+    const k=row.dataset.est;
+    row.querySelector('.est-cor').addEventListener('input', e=>{ setEstilo(k,{c:e.target.value}); atualizarLinhaEstilo(row); });
+    row.querySelector('.est-b').addEventListener('click', ()=>{ setEstilo(k,{b:!estEfetivo(k).b}); atualizarLinhaEstilo(row); });
+    row.querySelector('.est-i').addEventListener('click', ()=>{ setEstilo(k,{i:!estEfetivo(k).i}); atualizarLinhaEstilo(row); });
+    row.querySelector('.est-reset').addEventListener('click', ()=>{ setEstilo(k,null); atualizarLinhaEstilo(row); });
+  });
+}
+/* Painel rápido de cores/estilo, aberto direto da tela de edição */
+function abrirPainelEstilos(chaves, titulo){
+  const antigo=document.getElementById('estilo-pop'); if(antigo) antigo.remove();
+  const el=document.createElement('div');
+  el.id='estilo-pop'; el.className='estilo-pop no-print';
+  el.innerHTML='<div class="ep-head"><strong>'+escapeHtml(titulo)+'</strong><button type="button" class="ep-x" aria-label="Fechar">✕</button></div>'
+    +chaves.map(linhaEstilo).join('')
+    +'<div class="hint">Vale para todos os esboços. O texto dos campos muda de cor enquanto você escolhe.</div>';
+  document.body.appendChild(el);
+  bindLinhasEstilo(el);
+  el.querySelector('.ep-x').addEventListener('click', ()=>el.remove());
 }
 function aplicarVisualizacao(){
   const c=getCfg(), r=document.documentElement.style;
@@ -650,6 +690,7 @@ function esbocoVazio(){
 
 function render(){
   const vp=document.getElementById('verse-pop'); if(vp) vp.remove();
+  const ep=document.getElementById('estilo-pop'); if(ep) ep.remove();
   const app=document.getElementById('app');
   app.innerHTML = viewApp();
   bindApp();
@@ -720,7 +761,7 @@ function viewLista(){
 function viewEditor(){
   const e = state.editor || esbocoVazio();
   return `
-    <div class="page-head"><div><h2>${e.id?'Editar esboço':'Novo esboço'}</h2><div class="sub">Preencha a estrutura da sua pregação</div></div><button type="button" class="btn secondary small" id="btn-ia-editor">🤖 Buscar com IA</button></div>
+    <div class="page-head"><div><h2>${e.id?'Editar esboço':'Novo esboço'}</h2><div class="sub">Preencha a estrutura da sua pregação</div></div><div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;"><button type="button" class="btn secondary small" id="btn-cores-editor">🎨 Cores</button><button type="button" class="btn secondary small" id="btn-ia-editor">🤖 Buscar com IA</button></div></div>
     ${state.editorErro?`<div class="error-msg">${state.editorErro}</div>`:''}
     <form id="form-editor">
       <div class="card">
@@ -733,12 +774,12 @@ function viewEditor(){
       </div>
 
       <div class="card">
-        <h3 style="font-size:16px;">Resumo do conteúdo</h3>
+        <h3 style="font-size:16px; display:flex; justify-content:space-between; align-items:center; gap:8px;">Resumo do conteúdo <button type="button" class="est-atalho" data-estilo-chaves="resumo" title="Cores deste texto" aria-label="Cores deste texto">🎨</button></h3>
         <div class="field" style="margin-top:10px;"><textarea id="ed-resumo" placeholder="Resumo do que será abordado nesta pregação...">${e.resumo||''}</textarea></div>
       </div>
 
       <div class="card">
-        <h3 style="font-size:16px;">Introdução</h3>
+        <h3 style="font-size:16px; display:flex; justify-content:space-between; align-items:center; gap:8px;">Introdução <button type="button" class="est-atalho" data-estilo-chaves="intro" title="Cores deste texto" aria-label="Cores deste texto">🎨</button></h3>
         <div class="field" style="margin-top:10px;"><textarea id="ed-introducao" placeholder="Como você vai introduzir o tema...">${e.introducao||''}</textarea></div>
       </div>
 
@@ -752,7 +793,7 @@ function viewEditor(){
             <div class="ponto-card" data-ponto-id="${p.id}">
               <div class="ponto-head">
                 <span class="ponto-num">Ponto ${idx+1}</span>
-                ${e.pontos.length>1?`<button type="button" class="remove-x" data-remover-ponto="${p.id}">✕</button>`:''}
+                <span style="display:flex; gap:8px; align-items:center;"><button type="button" class="est-atalho" data-estilo-chaves="ptitulo,vers,perg,ptexto,aplic" title="Cores deste ponto" aria-label="Cores deste ponto">🎨</button>${e.pontos.length>1?`<button type="button" class="remove-x" data-remover-ponto="${p.id}">✕</button>`:''}</span>
               </div>
               <div class="field"><label>Título do ponto</label><input type="text" class="ponto-titulo" value="${p.titulo||''}" placeholder="Ex: A fé nasce da Palavra"></div>
               <div class="field"><label>Versículo de apoio (opcional)</label><div class="inline-row"><input type="text" class="ponto-versiculo" value="${p.versiculo||''}" placeholder="Ex: Romanos 10:17"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div><div class="vprev"></div></div>
@@ -766,7 +807,7 @@ function viewEditor(){
       </div>
 
       <div class="card">
-        <h3 style="font-size:16px;">Conclusão</h3>
+        <h3 style="font-size:16px; display:flex; justify-content:space-between; align-items:center; gap:8px;">Conclusão <button type="button" class="est-atalho" data-estilo-chaves="concl" title="Cores deste texto" aria-label="Cores deste texto">🎨</button></h3>
         <div class="field" style="margin-top:10px;"><textarea id="ed-conclusao" placeholder="Como você vai encerrar...">${e.conclusao||''}</textarea></div>
       </div>
 
@@ -776,7 +817,7 @@ function viewEditor(){
       </div>`:''}
 
       <div class="card">
-        <h3 style="font-size:16px;">Observações (opcional)</h3>
+        <h3 style="font-size:16px; display:flex; justify-content:space-between; align-items:center; gap:8px;">Observações (opcional) <button type="button" class="est-atalho" data-estilo-chaves="obs" title="Cores deste texto" aria-label="Cores deste texto">🎨</button></h3>
         <div class="field" style="margin-top:10px; margin-bottom:0;"><textarea id="ed-observacoes" placeholder="Ilustrações, lembretes, referências extras...">${e.observacoes||''}</textarea></div>
       </div>
 
@@ -940,6 +981,8 @@ function bindPage(){
       render();
     }));
     document.getElementById('btn-ia-editor').addEventListener('click', ()=>{ sincronizarEditorComDOM(); abrirIA(true); });
+    document.getElementById('btn-cores-editor').addEventListener('click', ()=>abrirPainelEstilos(Object.keys(ESTILOS),'Cores e estilo do texto'));
+    document.querySelectorAll('.est-atalho').forEach(b=>b.addEventListener('click', ()=>abrirPainelEstilos(b.dataset.estiloChaves.split(','),'Cores deste trecho')));
     document.querySelectorAll('[data-abrir-verso]').forEach(b=>b.addEventListener('click', ()=>abrirVersiculo(b.previousElementSibling.value)));
     bindPreviasVerso();
     document.querySelectorAll('[data-abrir-link]').forEach(b=>b.addEventListener('click', ()=>{ const u=normalizeUrl(b.previousElementSibling.value); if(u) window.open(u,'_blank','noopener'); }));
@@ -994,14 +1037,7 @@ function bindPage(){
       document.getElementById('cfg-cor').value=b.dataset.cor; marcarSwatch(b.dataset.cor); salvarVisual(null,b.dataset.cor);
     }));
     document.getElementById('cfg-cor').addEventListener('input', e=>{ marcarSwatch(e.target.value); salvarVisual(null,e.target.value); });
-    const linhas=()=>document.querySelectorAll('.est-row');
-    linhas().forEach(row=>{
-      const k=row.dataset.est;
-      row.querySelector('.est-cor').addEventListener('input', e=>{ setEstilo(k,{c:e.target.value}); atualizarLinhaEstilo(row); });
-      row.querySelector('.est-b').addEventListener('click', ()=>{ setEstilo(k,{b:!estEfetivo(k).b}); atualizarLinhaEstilo(row); });
-      row.querySelector('.est-i').addEventListener('click', ()=>{ setEstilo(k,{i:!estEfetivo(k).i}); atualizarLinhaEstilo(row); });
-      row.querySelector('.est-reset').addEventListener('click', ()=>{ setEstilo(k,null); atualizarLinhaEstilo(row); });
-    });
+    bindLinhasEstilo(document);
     document.getElementById('btn-restaurar-estilos').addEventListener('click', ()=>{
       if(!confirm('Restaurar o estilo padrão de todos os tópicos?')) return;
       const c=getCfg(); delete c.estilos; setCfg(c); aplicarVisualizacao(); render();
