@@ -141,6 +141,18 @@
   .est-btn{width:34px; height:34px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--ink); font-size:15px; padding:0; flex:none;}
   .est-btn.on{background:var(--primary); color:#fff; border-color:var(--primary);}
 
+  /* Subpontos */
+  .subpontos{margin-top:14px;}
+  .sub-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .sub-head label{margin:0; font-weight:600;}
+  .sub-item{border-left:3px solid var(--primary-soft); padding-left:10px; margin:0 0 12px;}
+  .sub-item-head{display:flex; justify-content:space-between; align-items:center; font-size:12.5px; color:var(--ink-soft); margin-bottom:4px;}
+  .sub-item .sub-titulo{color:var(--s-subtitulo-c,inherit); font-weight:var(--s-subtitulo-w,inherit); font-style:var(--s-subtitulo-i,inherit);}
+  .sub-item .sub-texto{color:var(--s-subtexto-c,inherit); font-weight:var(--s-subtexto-w,inherit); font-style:var(--s-subtexto-i,inherit);}
+  .manuscrito .m-sub{margin:6px 0 8px 14px; padding-left:10px; border-left:2px solid var(--border);}
+  .manuscrito .s-subtitulo{color:var(--s-subtitulo-c,inherit); font-weight:var(--s-subtitulo-w,700); font-style:var(--s-subtitulo-i,normal); font-size:calc(1em * var(--s-subtitulo-z,1));}
+  .manuscrito .s-subtexto{color:var(--s-subtexto-c,inherit); font-weight:var(--s-subtexto-w,inherit); font-style:var(--s-subtexto-i,normal); font-size:calc(1em * var(--s-subtexto-z,1)); margin:2px 0 6px;}
+
   /* QR code */
   #qr-overlay{z-index:70;}
   #qr-lista{max-height:40vh; overflow:auto; margin:10px 0;}
@@ -176,11 +188,15 @@
   .manuscrito .m-vfalha{color:var(--ink-soft); font-style:italic;}
   .vprev{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:6px;}
   .vprev:empty{display:none;}
-  .verse-pop{position:fixed; left:8px; right:8px; bottom:8px; max-width:640px; margin:0 auto; z-index:9999; background:#fff; border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:12px 14px; max-height:45vh; overflow:auto; font-size:15px; line-height:1.55;}
-  .verse-pop .vp-head{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
-  .verse-pop .vp-head strong{flex:1;}
-  .verse-pop .vp-x{border:none; background:none; font-size:18px; color:var(--ink-soft); padding:2px 6px;}
-  @media print{ .verse-pop{display:none !important;} }
+  .vp-ver{font-family:var(--font-mono); font-size:.75em; letter-spacing:.06em; color:var(--gold);}
+  .verse-full{position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; flex-direction:column;}
+  .verse-full .vf-head{display:flex; align-items:center; gap:10px; padding:14px 16px; background:var(--surface); border-bottom:1px solid var(--border);}
+  .verse-full .vf-ref{flex:1; font-size:19px; display:flex; gap:10px; align-items:baseline; min-width:0;}
+  .verse-full .vf-corpo{flex:1; overflow:auto; width:100%; max-width:920px; margin:0 auto; padding:28px clamp(18px,6vw,64px); font-size:clamp(22px,5.4vw,36px); line-height:1.6; color:var(--ink);}
+  .verse-full .vf-corpo sup{font-size:.55em; color:var(--gold); margin-right:3px; font-family:var(--font-mono);}
+  .verse-full .vf-rodape{margin:0; padding:12px 16px; background:var(--surface); border-top:1px solid var(--border);}
+  .verse-full a.btn{text-decoration:none; display:inline-flex; align-items:center; justify-content:center;}
+  @media print{ .verse-full{display:none !important;} }
 
   /* Configurações: pré-visualização e cores */
   .swatches{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
@@ -236,6 +252,8 @@ const ESTILOS={
   ptitulo:{n:'Título dos pontos', c:null, b:true, i:false},
   vers:{n:'Versículo de apoio', c:'#3B3486', b:false, i:true},
   ptexto:{n:'Desenvolvimento dos pontos', c:null, b:false, i:false},
+  subtitulo:{n:'Título dos subpontos', c:null, b:true, i:false, tam:true},
+  subtexto:{n:'Texto dos subpontos', c:null, b:false, i:false, tam:true},
   aplic:{n:'Aplicação prática', c:null, b:false, i:false},
   perg:{n:'Perguntas', c:null, b:false, i:true},
   concl:{n:'Conclusão', c:null, b:false, i:false},
@@ -243,7 +261,7 @@ const ESTILOS={
 };
 function estEfetivo(k){
   const d=ESTILOS[k], e=(getCfg().estilos||{})[k]||{};
-  return { c:e.c||d.c||(getCfg().fonteCor||FONTE_PADRAO.cor), b:e.b!==undefined?e.b:d.b, i:e.i!==undefined?e.i:d.i };
+  return { c:e.c||d.c||(getCfg().fonteCor||FONTE_PADRAO.cor), b:e.b!==undefined?e.b:d.b, i:e.i!==undefined?e.i:d.i, z:e.z||100 };
 }
 function setEstilo(k, patch){
   const c=getCfg(); c.estilos=c.estilos||{};
@@ -254,17 +272,18 @@ function setEstilo(k, patch){
 function linhaEstilo(k){
   const e=estEfetivo(k);
   return `<div class="est-row" data-est="${k}">
-    <span class="est-nome" style="color:${e.c}; font-weight:${e.b?700:400}; font-style:${e.i?'italic':'normal'};">${ESTILOS[k].n}</span>
+    <span class="est-nome" style="color:${e.c}; font-weight:${e.b?700:400}; font-style:${e.i?'italic':'normal'}; font-size:${14*e.z/100}px;">${ESTILOS[k].n}</span>
     <input type="color" class="cor-livre est-cor" value="${e.c}" title="Cor">
     <button type="button" class="est-btn est-b ${e.b?'on':''}" title="Negrito" aria-label="Negrito"><b>N</b></button>
     <button type="button" class="est-btn est-i ${e.i?'on':''}" title="Itálico" aria-label="Itálico"><i>I</i></button>
+    ${ESTILOS[k].tam?'<button type="button" class="est-btn est-menos" title="Diminuir a letra" aria-label="Diminuir a letra">A−</button><button type="button" class="est-btn est-mais" title="Aumentar a letra" aria-label="Aumentar a letra">A+</button>':''}
     <button type="button" class="est-btn est-reset" title="Restaurar este tópico" aria-label="Restaurar">↺</button>
   </div>`;
 }
 function atualizarLinhaEstilo(row){
   const k=row.dataset.est, e=estEfetivo(k);
   const nome=row.querySelector('.est-nome');
-  nome.style.color=e.c; nome.style.fontWeight=e.b?700:400; nome.style.fontStyle=e.i?'italic':'normal';
+  nome.style.color=e.c; nome.style.fontWeight=e.b?700:400; nome.style.fontStyle=e.i?'italic':'normal'; nome.style.fontSize=(14*e.z/100)+'px';
   row.querySelector('.est-cor').value=e.c;
   row.querySelector('.est-b').classList.toggle('on',e.b);
   row.querySelector('.est-i').classList.toggle('on',e.i);
@@ -276,6 +295,9 @@ function bindLinhasEstilo(raiz){
     row.querySelector('.est-b').addEventListener('click', ()=>{ setEstilo(k,{b:!estEfetivo(k).b}); atualizarLinhaEstilo(row); });
     row.querySelector('.est-i').addEventListener('click', ()=>{ setEstilo(k,{i:!estEfetivo(k).i}); atualizarLinhaEstilo(row); });
     row.querySelector('.est-reset').addEventListener('click', ()=>{ setEstilo(k,null); atualizarLinhaEstilo(row); });
+    const menos=row.querySelector('.est-menos'), mais=row.querySelector('.est-mais');
+    if(menos) menos.addEventListener('click', ()=>{ setEstilo(k,{z:Math.max(60,estEfetivo(k).z-10)}); atualizarLinhaEstilo(row); });
+    if(mais) mais.addEventListener('click', ()=>{ setEstilo(k,{z:Math.min(250,estEfetivo(k).z+10)}); atualizarLinhaEstilo(row); });
   });
 }
 /* Painel rápido de cores/estilo, aberto direto da tela de edição */
@@ -297,6 +319,7 @@ function aplicarVisualizacao(){
     if(e.c) r.setProperty('--s-'+k+'-c', e.c); else r.removeProperty('--s-'+k+'-c');
     if(e.b!==undefined) r.setProperty('--s-'+k+'-w', e.b?'700':'400'); else r.removeProperty('--s-'+k+'-w');
     if(e.i!==undefined) r.setProperty('--s-'+k+'-i', e.i?'italic':'normal'); else r.removeProperty('--s-'+k+'-i');
+    if(e.z) r.setProperty('--s-'+k+'-z', String(e.z/100)); else r.removeProperty('--s-'+k+'-z');
   });
   if(c.fonteTam) r.setProperty('--m-size', c.fonteTam+'px'); else r.removeProperty('--m-size');
   if(c.fonteCor) r.setProperty('--m-ink', c.fonteCor); else r.removeProperty('--m-ink');
@@ -621,19 +644,30 @@ async function hidratarVersiculos(raiz){
     el.innerHTML = bloco(el) ? versHtml(vs)+' <span class="m-vsig">'+sig+'</span>' : '“'+versHtml(vs)+'”';
   }
 }
-let VP_TOKEN=0;
-function abrirPopupVerso(refTexto){
-  const r=parseRef(refTexto); if(!r) return;
-  const cod=versaoTexto();
-  let el=document.getElementById('verse-pop');
-  if(!el){ el=document.createElement('div'); el.id='verse-pop'; el.className='verse-pop no-print'; document.body.appendChild(el); }
-  const meu=++VP_TOKEN;
-  el.innerHTML='<div class="vp-head"><strong>'+escapeHtml(r.texto)+'</strong><span class="vp-ver">'+siglaVersao(cod)+'</span><button type="button" class="vp-x" aria-label="Fechar">✕</button></div><div class="vp-body">Carregando…</div>';
-  el.querySelector('.vp-x').addEventListener('click', ()=>el.remove());
-  const corpo=el.querySelector('.vp-body');
+let VF_TOKEN=0;
+function fecharVersoTelaCheia(){
+  const el=document.getElementById('verse-full'); if(el) el.remove();
+  document.body.style.overflow='';
+}
+/* Abre o versículo em tela cheia (clique em qualquer versículo do esboço) */
+function abrirVersoTelaCheia(refTexto){
+  const r=parseRef(refTexto) || refEstruturada(refTexto);
+  if(!r || !r.ini) return;
+  fecharVersoTelaCheia();
+  const cod=versaoTexto(), meu=++VF_TOKEN;
+  const el=document.createElement('div');
+  el.id='verse-full'; el.className='verse-full no-print';
+  el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
+  el.innerHTML='<div class="vf-head"><div class="vf-ref"><strong>'+escapeHtml(r.texto)+'</strong><span class="vp-ver">'+siglaVersao(cod)+'</span></div><button type="button" class="btn ghost small vf-fechar" style="width:auto;">✕ Fechar</button></div>'
+    +'<div class="vf-corpo">Carregando…</div>'
+    +'<div class="modal-actions vf-rodape"><a class="btn secondary small" href="'+escapeAttr(bibleUrl(r.texto))+'" target="_blank" rel="noopener noreferrer">Abrir no site</a><button type="button" class="btn small vf-fechar">Fechar</button></div>';
+  document.body.appendChild(el);
+  document.body.style.overflow='hidden';
+  el.querySelectorAll('.vf-fechar').forEach(b=>b.addEventListener('click', fecharVersoTelaCheia));
+  const corpo=el.querySelector('.vf-corpo');
   textoVersiculo(r,cod)
-    .then(vs=>{ if(meu===VP_TOKEN) corpo.innerHTML = vs ? versHtml(vs) : 'Versículo não encontrado nesta versão.'; })
-    .catch(()=>{ if(meu===VP_TOKEN) corpo.textContent='Não foi possível carregar o texto. Verifique a internet ou baixe a versão em Configurações.'; });
+    .then(vs=>{ if(meu===VF_TOKEN) corpo.innerHTML = vs ? versHtml(vs) : 'Versículo não encontrado nesta versão.'; })
+    .catch(()=>{ if(meu===VF_TOKEN) corpo.textContent='Não foi possível carregar o texto. Verifique a internet ou baixe a versão em Configurações.'; });
 }
 function bindPreviasVerso(){
   if(modoTexto()==='off') return;
@@ -676,7 +710,9 @@ function refParaBusca(ref){
 }
 function linkVerso(ref){
   if(!ref||!ref.trim()) return '';
-  return '<a class="verse" href="'+escapeAttr(bibleUrl(refParaBusca(ref)))+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(ref.trim())+'</a>';
+  const r=refEstruturada(refParaBusca(ref));
+  const dv=(r && r.ini) ? ' data-verso="'+escapeAttr(r.texto)+'"' : '';
+  return '<a class="verse"'+dv+' href="'+escapeAttr(bibleUrl(refParaBusca(ref)))+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(ref.trim())+'</a>';
 }
 function abrirVersiculo(ref){
   ref=(ref||'').trim();
@@ -701,13 +737,13 @@ let state = {
 
 function esbocoVazio(){
   return { id:null, titulo:'', tema:'', textoBase:'', data:'', resumo:'', introducao:'',
-    pontos:[{id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''}],
+    pontos:[{id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:'', subpontos:[]}],
     conclusao:'', aplicacao:'', observacoes:'', links:[], criadoEm:null };
 }
 
 function render(){
   document.body.classList.remove('imprimindo-esboco');
-  const vp=document.getElementById('verse-pop'); if(vp) vp.remove();
+  fecharVersoTelaCheia();
   const ep=document.getElementById('estilo-pop'); if(ep) ep.remove();
   const app=document.getElementById('app');
   app.innerHTML = viewApp();
@@ -815,12 +851,21 @@ function viewEditor(){
             <div class="ponto-card" data-ponto-id="${p.id}">
               <div class="ponto-head">
                 <span class="ponto-num">Ponto ${idx+1}</span>
-                <span style="display:flex; gap:8px; align-items:center;"><button type="button" class="est-atalho" data-estilo-chaves="ptitulo,vers,perg,ptexto,aplic" title="Cores deste ponto" aria-label="Cores deste ponto">🎨</button>${e.pontos.length>1?`<button type="button" class="remove-x" data-remover-ponto="${p.id}">✕</button>`:''}</span>
+                <span style="display:flex; gap:8px; align-items:center;"><button type="button" class="est-atalho" data-estilo-chaves="ptitulo,vers,perg,ptexto,subtitulo,subtexto,aplic" title="Cores deste ponto" aria-label="Cores deste ponto">🎨</button>${e.pontos.length>1?`<button type="button" class="remove-x" data-remover-ponto="${p.id}">✕</button>`:''}</span>
               </div>
               <div class="field"><label>Título do ponto</label><input type="text" class="ponto-titulo" value="${escapeAttr(p.titulo||'')}" placeholder="Ex: A fé nasce da Palavra"></div>
               <div class="field"><label>Versículo de apoio (opcional)</label><div class="inline-row"><input type="text" class="ponto-versiculo" value="${escapeAttr(p.versiculo||'')}" placeholder="Ex: Romanos 10:17"><button type="button" class="btn ghost small" data-abrir-verso title="Abrir na Bíblia online">🔗</button></div><div class="vprev"></div></div>
               <div class="field"><label>Pergunta</label><textarea class="ponto-perg-antes" rows="2" placeholder="Pergunta para a igreja, antes do desenvolvimento...">${escapeAttr(p.pergAntes||'')}</textarea></div>
               <div class="field" style="margin-bottom:0;"><label>Explicação / desenvolvimento</label><textarea class="ponto-texto" placeholder="Desenvolva esse ponto...">${escapeAttr(p.texto||'')}</textarea></div>
+              <div class="subpontos">
+                <div class="sub-head"><label>Subpontos</label><button type="button" class="est-atalho" data-estilo-chaves="subtitulo,subtexto" title="Fonte e cores dos subpontos" aria-label="Fonte e cores dos subpontos">🎨</button></div>
+                ${(p.subpontos||[]).map((sp,si)=>`<div class="sub-item" data-sub-id="${escapeAttr(sp.id)}">
+                  <div class="sub-item-head"><span>Subponto ${idx+1}.${si+1}</span><button type="button" class="remove-x" data-remover-sub="${escapeAttr(p.id)}:${escapeAttr(sp.id)}" aria-label="Remover subponto">✕</button></div>
+                  <div class="field"><input type="text" class="sub-titulo" value="${escapeAttr(sp.titulo||'')}" placeholder="Título do subponto"></div>
+                  <div class="field" style="margin-bottom:0;"><textarea class="sub-texto" rows="2" placeholder="Desenvolva este subponto...">${escapeAttr(sp.texto||'')}</textarea></div>
+                </div>`).join('')}
+                <button type="button" class="btn ghost small" data-add-sub="${escapeAttr(p.id)}">+ Subponto</button>
+              </div>
               <div class="field" style="margin:14px 0 0;"><label>Aplicação prática deste ponto</label><textarea class="ponto-aplicacao" placeholder="O que a igreja deve fazer com este ponto...">${escapeAttr(p.aplicacao||'')}</textarea></div>
               <div class="field" style="margin:14px 0 0;"><label>Pergunta</label><textarea class="ponto-perg-depois1" rows="2" placeholder="Pergunta para a igreja, depois da aplicação prática...">${escapeAttr(p.pergDepois1||'')}</textarea></div>
               <div class="field" style="margin:14px 0 0;"><label>Pergunta</label><textarea class="ponto-perg-depois2" rows="2" placeholder="Outra pergunta, depois da aplicação prática...">${escapeAttr(p.pergDepois2||'')}</textarea></div>
@@ -920,10 +965,10 @@ function viewConfig(){
     </div>
     <div class="card" style="max-width:420px;">
       <h3 style="font-size:16px;">Texto dos versículos no esboço</h3>
-      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">O app reconhece versículos escritos como <b>João 3:16</b> ou <b>Jo 3:16</b> e mostra o texto, usando os arquivos do projeto Open Bible. O texto-base e o versículo de cada ponto mostram o texto logo abaixo.</div>
+      <div class="sub" style="color:var(--ink-soft); font-size:13px; margin:8px 0 14px;">O app reconhece versículos escritos como <b>João 3:16</b> ou <b>Jo 3:16</b> e mostra o texto, usando os arquivos do projeto Open Bible. Ao tocar em qualquer versículo do esboço, ele abre em tela cheia. O texto-base e o versículo de cada ponto mostram o texto logo abaixo.</div>
       <div class="field"><label>Versículos escritos no corpo do esboço</label>
         <select id="cfg-texto-modo">
-          <option value="popup" ${modoTexto()==='popup'?'selected':''}>Destacar e abrir um popup ao tocar</option>
+          <option value="popup" ${modoTexto()==='popup'?'selected':''}>Destacar e abrir em tela cheia ao tocar</option>
           <option value="inline" ${modoTexto()==='inline'?'selected':''}>Mostrar o texto dentro do esboço (sai na impressão)</option>
           <option value="off" ${modoTexto()==='off'?'selected':''}>Desligado</option>
         </select>
@@ -1001,9 +1046,22 @@ function bindPage(){
   if(state.tab==='editor'){
     document.getElementById('btn-add-ponto').addEventListener('click', ()=>{
       sincronizarEditorComDOM();
-      state.editor.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''});
+      state.editor.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:'', subpontos:[]});
       render();
     });
+    document.querySelectorAll('[data-add-sub]').forEach(b=>b.addEventListener('click', ()=>{
+      sincronizarEditorComDOM();
+      const pt=state.editor.pontos.find(x=>x.id===b.dataset.addSub);
+      if(pt){ pt.subpontos=pt.subpontos||[]; pt.subpontos.push({id:uid(), titulo:'', texto:''}); }
+      render();
+    }));
+    document.querySelectorAll('[data-remover-sub]').forEach(b=>b.addEventListener('click', ()=>{
+      sincronizarEditorComDOM();
+      const [pid,sid]=b.dataset.removerSub.split(':');
+      const pt=state.editor.pontos.find(x=>x.id===pid);
+      if(pt) pt.subpontos=(pt.subpontos||[]).filter(x=>x.id!==sid);
+      render();
+    }));
     document.querySelectorAll('[data-remover-ponto]').forEach(b=>b.addEventListener('click', ()=>{
       sincronizarEditorComDOM();
       state.editor.pontos = state.editor.pontos.filter(p=>p.id!==b.dataset.removerPonto);
@@ -1130,6 +1188,11 @@ function sincronizarEditorComDOM(){
     p.versiculo = card.querySelector('.ponto-versiculo').value;
     p.texto = card.querySelector('.ponto-texto').value;
     const apEl = card.querySelector('.ponto-aplicacao'); if(apEl) p.aplicacao = apEl.value;
+    p.subpontos=p.subpontos||[];
+    card.querySelectorAll('.sub-item').forEach(it=>{
+      const sp=p.subpontos.find(x=>x.id===it.dataset.subId);
+      if(sp){ sp.titulo=it.querySelector('.sub-titulo').value; sp.texto=it.querySelector('.sub-texto').value; }
+    });
     [['.ponto-perg-antes','pergAntes'],['.ponto-perg-depois1','pergDepois1'],['.ponto-perg-depois2','pergDepois2']].forEach(([sel,k])=>{ const el=card.querySelector(sel); if(el) p[k]=el.value; });
   });
   ed.links = ed.links||[];
@@ -1154,7 +1217,7 @@ function modalHTML(){
   return '';
 }
 function modalVisualizar(e){
-  const pontos = e.pontos.filter(p=>p.titulo||p.texto||p.aplicacao||p.pergAntes||p.pergDepois1||p.pergDepois2);
+  const pontos = e.pontos.filter(p=>p.titulo||p.texto||p.aplicacao||p.pergAntes||p.pergDepois1||p.pergDepois2||(p.subpontos||[]).some(q=>q.titulo||q.texto));
   return `
   <div class="overlay overlay-full" id="overlay">
     <div class="modal modal-full">
@@ -1178,6 +1241,7 @@ function modalVisualizar(e){
             ${p.versiculo?`<div class="m-ponto-vers s-vers">${linkVerso(p.versiculo)}</div>${blocoVerso(p.versiculo)}`:''}
             ${p.pergAntes?`<div class="m-perg s-perg"><span class="m-perg-rot">Pergunta</span> ${textoComRefs(p.pergAntes)}</div>`:''}
             ${p.texto?`<p class="s-ptexto">${textoComRefs(p.texto)}</p>`:''}
+            ${(p.subpontos||[]).map((q,qi)=>(q.titulo||q.texto)?`<div class="m-sub"><div class="m-sub-titulo s-subtitulo">${idx+1}.${qi+1} ${escapeHtml(q.titulo||'')}</div>${q.texto?`<p class="s-subtexto">${textoComRefs(q.texto)}</p>`:''}</div>`:'').join('')}
             ${p.aplicacao?`<div class="m-ponto-aplic-label s-secao">Aplicação prática</div><p class="s-aplic">${textoComRefs(p.aplicacao)}</p>`:''}
             ${p.pergDepois1?`<div class="m-perg s-perg"><span class="m-perg-rot">Pergunta</span> ${textoComRefs(p.pergDepois1)}</div>`:''}
             ${p.pergDepois2?`<div class="m-perg s-perg"><span class="m-perg-rot">Pergunta</span> ${textoComRefs(p.pergDepois2)}</div>`:''}
@@ -1247,9 +1311,9 @@ function modalIA(){
   </div>`;
 }
 function montarPromptIA(pedido, comoJSON){
-  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), resumo do conteúdo (2 a 3 frases), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento, aplicação prática do ponto, uma pergunta para depois do versículo de apoio e duas perguntas para depois da aplicação prática) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
+  let t = 'Crie um esboço de pregação cristã em português do Brasil sobre: '+pedido+'.\nInclua: título, tema, texto-base (referência bíblica), resumo do conteúdo (2 a 3 frases), introdução, 3 a 4 pontos principais (cada um com título, versículo de apoio, desenvolvimento, aplicação prática do ponto, uma pergunta para depois do versículo de apoio, duas perguntas para depois da aplicação prática e, quando fizer sentido, até 2 subpontos com título e texto) e conclusão. Escreva TODAS as referências bíblicas apenas no formato "Livro capítulo:versículo" (exemplo: João 3:16 ou Mateus 18:21-35), sem listas de versículos separados por vírgula.';
   if(comoJSON){
-    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","resumo":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":"","pergAntes":"","pergDepois1":"","pergDepois2":""}],"conclusao":""}';
+    t += '\nResponda SOMENTE com JSON válido, sem markdown nem texto extra, neste formato exato:\n{"titulo":"","tema":"","textoBase":"","resumo":"","introducao":"","pontos":[{"titulo":"","versiculo":"","texto":"","aplicacao":"","pergAntes":"","pergDepois1":"","pergDepois2":"","subpontos":[{"titulo":"","texto":""}]}],"conclusao":""}';
   }
   return t;
 }
@@ -1288,8 +1352,8 @@ async function gerarComIA(){
     base.introducao = String(r.introducao||'');
     base.conclusao = String(r.conclusao||'');
     base.aplicacao = String(r.aplicacao||'');
-    base.pontos = (Array.isArray(r.pontos)?r.pontos:[]).map(p=>({id:uid(), titulo:String(p.titulo||''), versiculo:String(p.versiculo||''), texto:String(p.texto||''), aplicacao:String(p.aplicacao||''), pergAntes:String(p.pergAntes||''), pergDepois1:String(p.pergDepois1||''), pergDepois2:String(p.pergDepois2||'')}));
-    if(base.pontos.length===0) base.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:''});
+    base.pontos = (Array.isArray(r.pontos)?r.pontos:[]).map(p=>({id:uid(), titulo:String(p.titulo||''), versiculo:String(p.versiculo||''), texto:String(p.texto||''), aplicacao:String(p.aplicacao||''), pergAntes:String(p.pergAntes||''), pergDepois1:String(p.pergDepois1||''), pergDepois2:String(p.pergDepois2||''), subpontos:(Array.isArray(p.subpontos)?p.subpontos:[]).slice(0,6).filter(q=>q&&typeof q==='object').map(q=>({id:uid(), titulo:String(q.titulo||''), texto:String(q.texto||'')}))}));
+    if(base.pontos.length===0) base.pontos.push({id:uid(), titulo:'', versiculo:'', texto:'', aplicacao:'', pergAntes:'', pergDepois1:'', pergDepois2:'', subpontos:[]});
     base.links = base.links||[];
     state.editor = base; state.editorErro='';
     state.iaLoading=false; state.modal=null; state.tab='editor';
@@ -1349,7 +1413,8 @@ function sanitizarEsboco(x){
   if(!x || typeof x!=='object') return null;
   const pontos=(Array.isArray(x.pontos)?x.pontos:[]).slice(0,40).filter(p=>p && typeof p==='object').map(p=>({
     id:idSeg(p.id), titulo:strSeg(p.titulo,500), versiculo:strSeg(p.versiculo,200), texto:strSeg(p.texto), aplicacao:strSeg(p.aplicacao),
-    pergAntes:strSeg(p.pergAntes,3000), pergDepois1:strSeg(p.pergDepois1,3000), pergDepois2:strSeg(p.pergDepois2,3000) }));
+    pergAntes:strSeg(p.pergAntes,3000), pergDepois1:strSeg(p.pergDepois1,3000), pergDepois2:strSeg(p.pergDepois2,3000),
+    subpontos:(Array.isArray(p.subpontos)?p.subpontos:[]).slice(0,30).filter(q=>q && typeof q==='object').map(q=>({id:idSeg(q.id), titulo:strSeg(q.titulo,500), texto:strSeg(q.texto)})) }));
   const links=(Array.isArray(x.links)?x.links:[]).slice(0,40).filter(l=>l && typeof l==='object').map(l=>{
     const url=strSeg(l.url,2000);
     return {id:idSeg(l.id), titulo:strSeg(l.titulo,300), url:/^https?:\/\//i.test(url)?url:''};
@@ -1423,9 +1488,9 @@ function apagarTudo(){
 
 document.addEventListener('click', ev=>{
   const ref=ev.target.closest && ev.target.closest('.ref');
-  if(ref){ ev.preventDefault(); abrirPopupVerso(ref.dataset.ref); return; }
-  const pop=document.getElementById('verse-pop');
-  if(pop && !ev.target.closest('#verse-pop')) pop.remove();
+  if(ref){ ev.preventDefault(); abrirVersoTelaCheia(ref.dataset.ref); return; }
+  const lv=ev.target.closest && ev.target.closest('a.verse[data-verso]');
+  if(lv){ ev.preventDefault(); abrirVersoTelaCheia(lv.dataset.verso); }
 });
 /* ---- Gerador de QR code: "QRCode for JavaScript" (c) 2009 Kazuhiko Arase, licença MIT (http://www.opensource.org/licenses/mit-license.php). "QR Code" é marca registrada da DENSO WAVE. ---- */
 const __QR={};
@@ -2766,6 +2831,7 @@ function sanitizarCfg(x){
     Object.keys(ESTILOS).forEach(k=>{
       const e=x.estilos[k]; if(!e || typeof e!=='object') return;
       const r={}; if(cor(e.c)) r.c=e.c; if(typeof e.b==='boolean') r.b=e.b; if(typeof e.i==='boolean') r.i=e.i;
+      if(typeof e.z==='number' && e.z>=50 && e.z<=250) r.z=Math.round(e.z);
       if(Object.keys(r).length) est[k]=r;
     });
     o.estilos=est;
@@ -2954,8 +3020,8 @@ window.addEventListener('beforeprint', ()=>{
 });
 window.addEventListener('afterprint', ()=>document.body.classList.remove('imprimindo-esboco'));
 document.addEventListener('keydown', ev=>{
-  if(ev.key==='Enter' && ev.target.classList && ev.target.classList.contains('ref')){ ev.preventDefault(); abrirPopupVerso(ev.target.dataset.ref); }
-  if(ev.key==='Escape'){ const pop=document.getElementById('verse-pop'); if(pop) pop.remove(); }
+  if(ev.key==='Enter' && ev.target.classList && ev.target.classList.contains('ref')){ ev.preventDefault(); abrirVersoTelaCheia(ev.target.dataset.ref); }
+  if(ev.key==='Escape') fecharVersoTelaCheia();
 });
 aplicarVisualizacao();
 render();
